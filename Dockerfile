@@ -43,11 +43,16 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Prisma client + CLI for migrations
+# Prisma - client, CLI binary, and engine for migrations
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
+# Create symlink for prisma binary
+RUN ln -sf ../prisma/build/index.js /app/node_modules/.bin/prisma 2>/dev/null; \
+    chmod +x /app/node_modules/prisma/build/index.js 2>/dev/null; \
+    true
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
