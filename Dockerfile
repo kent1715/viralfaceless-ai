@@ -14,8 +14,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build 2>/dev/null || bun run build
 
-# Run prisma db push during build to create initial DB schema
-RUN DATABASE_URL=file:/app/data/init.db npx prisma db push --skip-generate 2>/dev/null || echo "Build-time DB init skipped"
+# Create initial DB with schema
+RUN mkdir -p /app/data && \
+    DATABASE_URL=file:/app/data/init.db npx prisma db push --skip-generate
 
 # ── Stage 2: Production ──────────────────────────────────
 FROM node:20-alpine AS runner
@@ -37,22 +38,24 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Prisma client only (for runtime queries)
+# Prisma client for runtime queries
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy schema for reference
 COPY --from=builder /app/prisma ./prisma
 
-# Create data directory with proper permissions
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+# Copy initialized DB as seed (will be copied to volume on first run)
+COPY --from=builder /app/data/init.db /app/init.db
 
-# Copy the initialized database from build
-COPY --from=builder /app/data/init.db /app/data/prod.db
-RUN chown nextjs:nodejs /app/data/prod.db
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+
+# Copy entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chown nextjs:nodejs /app/entrypoint.sh
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["dumb-init", "node", "server.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "server.js"]
