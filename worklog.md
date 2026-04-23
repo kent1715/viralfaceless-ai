@@ -27,3 +27,27 @@ Stage Summary:
 - AI features (ideas, scripts, videos, SEO) only work in sandbox (Preview Panel) due to network isolation
 - AI proxy infrastructure added for future external AI API integration
 - GitHub repo: https://github.com/kent1715/viralfaceless-ai
+
+---
+Task ID: 2
+Agent: Main
+Task: Continue from previous session - verify Preview Panel, push to GitHub, deploy to EC2
+
+Work Log:
+- Verified all code files from previous session are correct (ideas, scripts, seo, videos API routes, TTS route, ai.ts, api.ts, constants, types)
+- Confirmed `remainingCredits` field name consistency across all 4 AI routes and frontend
+- Confirmed `role: 'system'` for AI system prompts
+- Confirmed Python edge-tts TTS route with 8 voices
+- Installed edge-tts (v7.2.8) in sandbox
+- ESLint passed clean
+- Started dev server persistently using setsid wrapper (port 3000 via Caddy port 81)
+- Pushed unpushed commit to GitHub using new PAT
+- Set GitHub Actions secrets: EC2_HOST (16.59.144.244), JWT_SECRET (generated)
+- GitHub Actions deploy workflow triggered but failed: missing EC2_SSH_KEY secret
+- EC2_SSH_KEY needs to be set manually in GitHub repo settings
+
+Stage Summary:
+- Preview Panel: App running, all features accessible (AI, TTS, auth)
+- GitHub: Code pushed to kent1715/viralfaceless-ai, 2 of 3 secrets set
+- EC2 Deploy: Blocked by missing EC2_SSH_KEY GitHub secret
+- Next step: User needs to provide EC2 SSH private key or set it in GitHub repo Settings > Secrets
