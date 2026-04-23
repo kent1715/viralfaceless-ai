@@ -1,0 +1,41 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/viralfaceless-ai
+            git pull origin main
+            docker build -t viralfaceless-ai .
+            docker stop viralfaceless-ai 2>/dev/null || true
+            docker rm viralfaceless-ai 2>/dev/null || true
+            docker run -d \
+              --name viralfaceless-ai \
+              --restart always \
+              -p 3000:3000 \
+              -e DATABASE_URL=file:/app/data/prod.db \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -v /home/ubuntu/viralfaceless-data:/app/data \
+              viralfaceless-ai
+
+            echo ">>> Waiting for app to start..."
+            sleep 10
+            
+            echo ">>> Health check..."
+            curl -s http://localhost:3000/api/auth/me || echo "Auth check expected to fail (no token)"
+            
+            echo ">>> TTS health check..."
+            curl -s http://localhost:3000/api/tts/generate || echo "TTS check"
+            
+            echo ">>> Deployment complete!"

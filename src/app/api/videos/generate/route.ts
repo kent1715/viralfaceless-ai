@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const completion = await zai.chat.completions.create({
       messages: [
         {
-          role: 'assistant',
+          role: 'system',
           content: `You are an expert video producer specializing in faceless social media content. You create detailed production plans for short-form videos (TikTok, YouTube Shorts, Instagram Reels).
 
 Given a script, you create a comprehensive video production plan that includes:
@@ -132,7 +132,7 @@ Return the production plan as JSON.`
         ...videoPlan,
       },
       projectId: targetProjectId,
-      creditsRemaining: user.credits - 1,
+      remainingCredits: user.credits - 1,
     });
   } catch (error: unknown) {
     console.error('Video generation error:', error);

@@ -1,38 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { execFile } from 'child_process';
+import { writeFile, unlink, mkdtemp } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { promisify } from 'util';
 import { authenticateRequest } from '@/lib/auth';
-import ZAI from 'z-ai-web-dev-sdk';
+import { db } from '@/lib/db';
 
-const MAX_TTS_LENGTH = 1024;
+const execFileAsync = promisify(execFile);
 
-function splitTextIntoChunks(text: string, maxLength = 1000): string[] {
-  const chunks: string[] = [];
-  // Try to split on sentence boundaries
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+// Edge-TTS voice mapping
+const VOICE_MAP: Record<string, { voice: string; lang: string }> = {
+  gadis: { voice: 'id-ID-GadisNeural', lang: '🇮🇩' },
+  ardi: { voice: 'id-ID-ArdiNeural', lang: '🇮🇩' },
+  jenny: { voice: 'en-US-JennyNeural', lang: '🇺🇸' },
+  guy: { voice: 'en-US-GuyNeural', lang: '🇺🇸' },
+  aria: { voice: 'en-US-AriaNeural', lang: '🇺🇸' },
+  davis: { voice: 'en-US-DavisNeural', lang: '🇺🇸' },
+  sonia: { voice: 'en-GB-SoniaNeural', lang: '🇬🇧' },
+  ryan: { voice: 'en-GB-RyanNeural', lang: '🇬🇧' },
+};
 
-  let currentChunk = '';
-  for (const sentence of sentences) {
-    if ((currentChunk + sentence).length <= maxLength) {
-      currentChunk += sentence;
-    } else {
-      if (currentChunk) chunks.push(currentChunk.trim());
-      // If a single sentence is longer than maxLength, force split
-      if (sentence.length > maxLength) {
-        let remaining = sentence.trim();
-        while (remaining.length > maxLength) {
-          chunks.push(remaining.substring(0, maxLength).trim());
-          remaining = remaining.substring(maxLength);
-        }
-        currentChunk = remaining;
-      } else {
-        currentChunk = sentence;
-      }
-    }
-  }
-  if (currentChunk) chunks.push(currentChunk.trim());
-
-  return chunks.length > 0 ? chunks : [text.substring(0, maxLength)];
-}
+const DEFAULT_VOICE = 'id-ID-GadisNeural';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!auth.success) return auth.response;
 
     const body = await request.json();
-    const { text, voice = 'tongtong', speed = 1.0 } = body;
+    const { text, voice = 'gadis', speed = 1.0 } = body;
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json(
@@ -49,76 +38,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Map voice name to edge-tts voice
+    const voiceConfig = VOICE_MAP[voice] || VOICE_MAP.gadis;
+    const voiceName = voiceConfig.voice;
+
     // Clamp speed
     const clampedSpeed = Math.min(2.0, Math.max(0.5, Number(speed) || 1.0));
+    // Edge-TTS uses percentage: +0% = normal, +50% = 1.5x, -50% = 0.5x
+    const rateStr = `+${Math.round((clampedSpeed - 1) * 100)}%`;
 
-    // Check credits
-    const user = await db.user.findUnique({ where: { id: auth.payload.userId } });
-    if (!user || user.credits < 1) {
+    // Create temp directory and output file
+    const tmpDir = await mkdtemp(join(tmpdir(), 'tts-'));
+    const outputFile = join(tmpDir, 'output.mp3');
+
+    try {
+      // Call Python edge-tts CLI
+      await execFileAsync('edge-tts', [
+        '--voice', voiceName,
+        '--rate', rateStr,
+        '--text', text.trim(),
+        '--write-media', outputFile,
+      ], {
+        timeout: 60000, // 60 second timeout for TTS generation
+      });
+
+      // Read the generated MP3 file
+      const { readFile } = await import('fs/promises');
+      const audioBuffer = await readFile(outputFile);
+
+      // Return audio as binary response
+      return new NextResponse(new Uint8Array(audioBuffer), {
+        status: 200,
+        headers: {
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': audioBuffer.length.toString(),
+          'Cache-Control': 'no-cache',
+          'X-Voice-Used': voice,
+          'X-Voice-Display': voiceName,
+        },
+      });
+    } finally {
+      // Cleanup temp files
+      try {
+        const { unlink } = await import('fs/promises');
+        await unlink(outputFile);
+        const { rmdir } = await import('fs/promises');
+        await rmdir(tmpDir);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  } catch (error: unknown) {
+    console.error('TTS generation error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+
+    if (errMsg.includes('ENOENT') || errMsg.includes('edge-tts')) {
       return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 402 }
+        { error: 'TTS engine not available. Please contact support.' },
+        { status: 503 }
       );
     }
 
-    const zai = await ZAI.create();
-
-    let audioBuffer: Buffer;
-
-    if (text.length <= MAX_TTS_LENGTH) {
-      // Single request
-      const response = await zai.audio.tts.create({
-        input: text.trim(),
-        voice,
-        speed: clampedSpeed,
-        response_format: 'mp3',
-        stream: false,
-      });
-
-      const arrayBuffer = await response.arrayBuffer();
-      audioBuffer = Buffer.from(new Uint8Array(arrayBuffer));
-    } else {
-      // Split into chunks and concatenate
-      const chunks = splitTextIntoChunks(text);
-      const buffers: Buffer[] = [];
-
-      for (const chunk of chunks) {
-        const response = await zai.audio.tts.create({
-          input: chunk,
-          voice,
-          speed: clampedSpeed,
-          response_format: 'mp3',
-          stream: false,
-        });
-
-        const arrayBuffer = await response.arrayBuffer();
-        buffers.push(Buffer.from(new Uint8Array(arrayBuffer)));
-      }
-
-      audioBuffer = Buffer.concat(buffers);
-    }
-
-    // Deduct credit
-    await db.user.update({
-      where: { id: auth.payload.userId },
-      data: { credits: { decrement: 1 } },
-    });
-
-    // Return audio as binary response
-    return new NextResponse(new Uint8Array(audioBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length.toString(),
-        'Cache-Control': 'no-cache',
-        'X-Credits-Remaining': String(user.credits - 1),
-      },
-    });
-  } catch (error: unknown) {
-    console.error('TTS generation error:', error);
     return NextResponse.json(
       { error: 'Failed to generate speech. Please try again.' },
       { status: 500 }
+    );
+  }
+}
+
+// Health check endpoint
+export async function GET() {
+  try {
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
+    const execFileAsync = promisify(execFile);
+
+    await execFileAsync('edge-tts', ['--list-voices'], { timeout: 10000 });
+
+    return NextResponse.json({
+      status: 'healthy',
+      engine: 'edge-tts (Microsoft Edge Neural TTS)',
+      voices: Object.entries(VOICE_MAP).map(([key, val]) => ({
+        id: key,
+        voice: val.voice,
+        lang: val.lang,
+      })),
+    });
+  } catch {
+    return NextResponse.json(
+      { status: 'unhealthy', error: 'edge-tts not available' },
+      { status: 503 }
     );
   }
 }

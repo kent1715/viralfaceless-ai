@@ -148,6 +148,6 @@ export type NicheType =
 export type ScriptStyle = 'storytelling' | 'controversial' | 'educational' | 'emotional';
 export type ScriptTone = 'serious' | 'funny' | 'dark' | 'energetic';
 
-export type TTSVoice = 'tongtong' | 'chuichui' | 'xiaochen' | 'jam' | 'kazi' | 'douji' | 'luodo';
+export type TTSVoice = 'gadis' | 'ardi' | 'jenny' | 'guy' | 'aria' | 'davis' | 'sonia' | 'ryan';
 export type ThumbnailStyle = 'clickbait' | 'clean' | 'minimal';
 export type PaymentMethod = 'qris' | 'bank_transfer' | 'ewallet';

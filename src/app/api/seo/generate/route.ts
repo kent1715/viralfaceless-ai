@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const completion = await zai.chat.completions.create({
       messages: [
         {
-          role: 'assistant',
+          role: 'system',
           content: `You are an expert SEO specialist and social media strategist. You optimize content titles, descriptions, and hashtags for maximum discoverability and engagement across social media platforms.
 
 You must respond with valid JSON containing these fields:
@@ -89,7 +89,7 @@ Return the SEO data as JSON.`
     return NextResponse.json({
       message: 'SEO metadata generated successfully.',
       seo: seoData,
-      creditsRemaining: user.credits - 1,
+      remainingCredits: user.credits - 1,
     });
   } catch (error: unknown) {
     console.error('SEO generation error:', error);

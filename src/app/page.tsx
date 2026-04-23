@@ -73,6 +73,7 @@ export default function Home() {
   const {
     isAuthenticated,
     currentView,
+    sidebarOpen,
     setUser,
     setToken,
     setCurrentView,
@@ -170,7 +171,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex bg-background">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <div className={`flex-1 flex flex-col min-h-screen overflow-hidden transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : ''}`}>
         <Header />
         <main className="flex-1 overflow-auto">
           <ViewRouter />

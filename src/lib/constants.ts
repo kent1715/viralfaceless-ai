@@ -28,13 +28,14 @@ export const SCRIPT_TONES = [
 ] as const;
 
 export const TTS_VOICES = [
-  { value: 'tongtong', label: 'TongTong', description: 'Warm and friendly' },
-  { value: 'xiaochen', label: 'XiaoChen', description: 'Professional narrator' },
-  { value: 'chuichui', label: 'ChuiChui', description: 'Lively and cute' },
-  { value: 'jam', label: 'Jam', description: 'British gentleman' },
-  { value: 'kazi', label: 'Kazi', description: 'Clear and standard' },
-  { value: 'douji', label: 'DouJi', description: 'Natural and fluent' },
-  { value: 'luodo', label: 'LuoDo', description: 'Infectious and powerful' },
+  { value: 'gadis', label: 'Gadis', description: '🇮🇩 Wanita Indonesia - Hangat' },
+  { value: 'ardi', label: 'Ardi', description: '🇮🇩 Pria Indonesia - Tegas' },
+  { value: 'jenny', label: 'Jenny', description: '🇺🇸 US Female - Friendly' },
+  { value: 'guy', label: 'Guy', description: '🇺🇸 US Male - Confident' },
+  { value: 'aria', label: 'Aria', description: '🇺🇸 US Female - Energetic' },
+  { value: 'davis', label: 'Davis', description: '🇺🇸 US Male - Professional' },
+  { value: 'sonia', label: 'Sonia', description: '🇬🇧 UK Female - Elegant' },
+  { value: 'ryan', label: 'Ryan', description: '🇬🇧 UK Male - British' },
 ] as const;
 
 export const THUMBNAIL_STYLES = [

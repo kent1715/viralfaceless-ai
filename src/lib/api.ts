@@ -1,7 +1,30 @@
 const API_BASE = '';
 
+// Timeout helper - 120s for AI endpoints, 30s for others
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 120000
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // Helper function for authenticated requests
-async function authFetch(url: string, options: RequestInit = {}) {
+async function authFetch(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs?: number
+) {
   const token =
     typeof window !== 'undefined' ? localStorage.getItem('vf_token') : null;
   const headers: Record<string, string> = {
@@ -9,7 +32,11 @@ async function authFetch(url: string, options: RequestInit = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };
-  const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
+  const res = await fetchWithTimeout(
+    `${API_BASE}${url}`,
+    { ...options, headers },
+    timeoutMs
+  );
   if (!res.ok) {
     const error = await res
       .json()
@@ -26,27 +53,28 @@ export const api = {
       authFetch('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ email, name, password }),
-      }).then((r) => r.json()),
+      }, 30000).then((r) => r.json()),
 
     login: (email: string, password: string) =>
       authFetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-      }).then((r) => r.json()),
+      }, 30000).then((r) => r.json()),
 
-    me: () => authFetch('/api/auth/me').then((r) => r.json()),
+    me: () =>
+      authFetch('/api/auth/me', {}, 15000).then((r) => r.json()),
   },
 
-  // ─── Ideas ───────────────────────────────────────────
+  // ─── Ideas (AI - long timeout) ──────────────────────
   ideas: {
     generate: (niche: string, count?: number, makeMoreExtreme?: boolean) =>
       authFetch('/api/ideas/generate', {
         method: 'POST',
         body: JSON.stringify({ niche, count, makeMoreExtreme }),
-      }).then((r) => r.json()),
+      }, 120000).then((r) => r.json()),
   },
 
-  // ─── Scripts ─────────────────────────────────────────
+  // ─── Scripts (AI - long timeout) ────────────────────
   scripts: {
     generate: (data: {
       ideaTitle: string;
@@ -60,25 +88,25 @@ export const api = {
       authFetch('/api/scripts/generate', {
         method: 'POST',
         body: JSON.stringify(data),
-      }).then((r) => r.json()),
+      }, 120000).then((r) => r.json()),
   },
 
-  // ─── TTS ─────────────────────────────────────────────
+  // ─── TTS (no auth needed, moderate timeout) ─────────
   tts: {
     generate: (text: string, voice?: string, speed?: number) =>
       authFetch('/api/tts/generate', {
         method: 'POST',
         body: JSON.stringify({ text, voice, speed }),
-      }),
+      }, 60000),
   },
 
-  // ─── Videos ──────────────────────────────────────────
+  // ─── Videos (AI - long timeout) ─────────────────────
   videos: {
     generate: (script: string, style?: string) =>
       authFetch('/api/videos/generate', {
         method: 'POST',
         body: JSON.stringify({ script, style }),
-      }).then((r) => r.json()),
+      }, 120000).then((r) => r.json()),
   },
 
   // ─── Thumbnails ──────────────────────────────────────
@@ -87,10 +115,10 @@ export const api = {
       authFetch('/api/thumbnails/generate', {
         method: 'POST',
         body: JSON.stringify({ prompt, style }),
-      }).then((r) => r.json()),
+      }, 120000).then((r) => r.json()),
   },
 
-  // ─── SEO ─────────────────────────────────────────────
+  // ─── SEO (AI - long timeout) ────────────────────────
   seo: {
     generate: (
       title: string,
@@ -101,18 +129,18 @@ export const api = {
       authFetch('/api/seo/generate', {
         method: 'POST',
         body: JSON.stringify({ title, description, niche, platforms }),
-      }).then((r) => r.json()),
+      }, 120000).then((r) => r.json()),
   },
 
   // ─── Credits ─────────────────────────────────────────
   credits: {
     balance: () =>
-      authFetch('/api/credits/balance').then((r) => r.json()),
+      authFetch('/api/credits/balance', {}, 15000).then((r) => r.json()),
     use: (amount: number) =>
       authFetch('/api/credits/use', {
         method: 'POST',
         body: JSON.stringify({ amount }),
-      }).then((r) => r.json()),
+      }, 15000).then((r) => r.json()),
   },
 
   // ─── Payments ────────────────────────────────────────
@@ -121,35 +149,35 @@ export const api = {
       authFetch('/api/payments/create', {
         method: 'POST',
         body: JSON.stringify({ amount, method }),
-      }).then((r) => r.json()),
+      }, 30000).then((r) => r.json()),
   },
 
   // ─── Admin ───────────────────────────────────────────
   admin: {
     stats: () =>
-      authFetch('/api/admin/stats').then((r) => r.json()),
+      authFetch('/api/admin/stats', {}, 15000).then((r) => r.json()),
     users: () =>
-      authFetch('/api/admin/users').then((r) => r.json()),
+      authFetch('/api/admin/users', {}, 15000).then((r) => r.json()),
     updateUser: (userId: string, data: Record<string, unknown>) =>
       authFetch('/api/admin/users', {
         method: 'PATCH',
         body: JSON.stringify({ userId, ...data }),
-      }).then((r) => r.json()),
+      }, 15000).then((r) => r.json()),
   },
 
   // ─── Projects ────────────────────────────────────────
   projects: {
     list: () =>
-      authFetch('/api/projects').then((r) => r.json()),
+      authFetch('/api/projects', {}, 15000).then((r) => r.json()),
     create: (title: string, niche?: string) =>
       authFetch('/api/projects', {
         method: 'POST',
         body: JSON.stringify({ title, niche }),
-      }).then((r) => r.json()),
+      }, 15000).then((r) => r.json()),
     delete: (id: string) =>
       authFetch('/api/projects', {
         method: 'DELETE',
         body: JSON.stringify({ id }),
-      }).then((r) => r.json()),
+      }, 15000).then((r) => r.json()),
   },
 };

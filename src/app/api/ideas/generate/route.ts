@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const completion = await zai.chat.completions.create({
       messages: [
         {
-          role: 'assistant',
+          role: 'system',
           content: `You are an expert viral content strategist specializing in faceless social media content. You create ideas that are designed to go viral on platforms like TikTok, YouTube Shorts, and Instagram Reels.
 
 You must respond with a valid JSON array of content ideas. Each idea must have exactly these fields:
@@ -123,7 +123,7 @@ Respond ONLY with the JSON array, no additional text or markdown formatting.`
       message: `${savedIdeas.length} ideas generated successfully.`,
       projectId: project.id,
       ideas: savedIdeas,
-      creditsRemaining: user.credits - 1,
+      remainingCredits: user.credits - 1,
     });
   } catch (error: unknown) {
     console.error('Idea generation error:', error);

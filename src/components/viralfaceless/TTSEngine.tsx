@@ -201,7 +201,7 @@ export default function TTSEngine() {
   } = useStore();
 
   const [text, setText] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState<TTSVoice>('tongtong');
+  const [selectedVoice, setSelectedVoice] = useState<TTSVoice>('gadis');
   const [speed, setSpeed] = useState(1.0);
 
   // Populate text from current script when available
@@ -244,12 +244,25 @@ export default function TTSEngine() {
     }
   }, [text, selectedVoice, speed, user, setTtsAudioUrl, setTtsLoading, setUser]);
 
-  // ── Preview voice (mock) ─────────────────────────────────────
-  const handlePreviewVoice = useCallback((voiceLabel: string) => {
-    toast.info(`Preview for "${voiceLabel}" - Feature coming soon!`, {
-      description: 'Voice previews will play a sample in production.',
-    });
-  }, []);
+  // ── Preview voice ─────────────────────────────────────
+  const handlePreviewVoice = useCallback(async (voiceId: string) => {
+    try {
+      setTtsLoading(true);
+      const response = await api.tts.generate(
+        `Hi! This is a preview of the ${voiceId} voice. I hope you like it!`,
+        voiceId as TTSVoice,
+        1.0
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setTtsAudioUrl(url);
+      toast.success(`Playing ${voiceId} preview`);
+    } catch {
+      toast.error('Failed to play preview');
+    } finally {
+      setTtsLoading(false);
+    }
+  }, [setTtsAudioUrl, setTtsLoading]);
 
   return (
     <div className="space-y-6">
@@ -332,7 +345,7 @@ export default function TTSEngine() {
                   className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handlePreviewVoice(voice.label);
+                    handlePreviewVoice(voice.value);
                   }}
                 >
                   <Play className="size-3" />

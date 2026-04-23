@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const completion = await zai.chat.completions.create({
       messages: [
         {
-          role: 'assistant',
+          role: 'system',
           content: `You are an expert scriptwriter for viral faceless social media videos. You write scripts optimized for short-form content (30-90 seconds) on TikTok, YouTube Shorts, and Instagram Reels.
 
 You write scripts that:
@@ -134,7 +134,7 @@ Return the script as JSON.`
       message: 'Script generated successfully.',
       script,
       projectId: targetProjectId,
-      creditsRemaining: user.credits - 1,
+      remainingCredits: user.credits - 1,
     });
   } catch (error: unknown) {
     console.error('Script generation error:', error);
