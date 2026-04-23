@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
-import ZAI from 'z-ai-web-dev-sdk';
+import { aiChatCompletion } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,17 +27,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate ideas using LLM
-    const zai = await ZAI.create();
+    // Generate ideas using AI
     const extremeModifier = makeMoreExtreme
       ? ' Make these ideas MORE extreme, controversial, and attention-grabbing. Push boundaries to maximize virality.'
       : '';
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert viral content strategist specializing in faceless social media content. You create ideas that are designed to go viral on platforms like TikTok, YouTube Shorts, and Instagram Reels.
+    const rawContent = await aiChatCompletion([
+      {
+        role: 'system',
+        content: `You are an expert viral content strategist specializing in faceless social media content. You create ideas that are designed to go viral on platforms like TikTok, YouTube Shorts, and Instagram Reels.
 
 You must respond with a valid JSON array of content ideas. Each idea must have exactly these fields:
 - "title": A catchy, clickbait-style title for the video
@@ -53,16 +51,13 @@ Generate ideas that:
 - Target the given niche specifically${extremeModifier}
 
 Respond ONLY with the JSON array, no additional text or markdown formatting.`
-        },
-        {
-          role: 'user',
-          content: `Generate ${count} viral faceless content ideas for the niche: "${niche}". Return a JSON array.`
-        }
-      ],
-      thinking: { type: 'disabled' }
-    });
+      },
+      {
+        role: 'user',
+        content: `Generate ${count} viral faceless content ideas for the niche: "${niche}". Return a JSON array.`
+      }
+    ]);
 
-    const rawContent = completion.choices[0]?.message?.content || '[]';
     // Parse JSON - handle potential markdown wrapping
     let ideasData;
     try {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
-import ZAI from 'z-ai-web-dev-sdk';
+import { aiChatCompletion } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +27,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate SEO metadata using LLM
-    const zai = await ZAI.create();
+    // Generate SEO metadata using AI
     const targetPlatforms = platforms || ['youtube', 'tiktok', 'instagram'];
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert SEO specialist and social media strategist. You optimize content titles, descriptions, and hashtags for maximum discoverability and engagement across social media platforms.
+    const rawContent = await aiChatCompletion([
+      {
+        role: 'system',
+        content: `You are an expert SEO specialist and social media strategist. You optimize content titles, descriptions, and hashtags for maximum discoverability and engagement across social media platforms.
 
 You must respond with valid JSON containing these fields:
 - "optimizedTitle": A clickbait-optimized title that is also SEO-friendly (include keywords naturally)
@@ -50,22 +48,19 @@ For hashtags:
 - Instagram: Use a mix of popular and niche hashtags
 
 Respond ONLY with valid JSON, no markdown or extra text.`
-        },
-        {
-          role: 'user',
-          content: `Generate optimized SEO metadata for:
+      },
+      {
+        role: 'user',
+        content: `Generate optimized SEO metadata for:
 - Title: "${title}"
 - Description: "${description || 'Not provided'}"
 - Niche: "${niche}"
 - Target platforms: ${targetPlatforms.join(', ')}
 
 Return the SEO data as JSON.`
-        }
-      ],
-      thinking: { type: 'disabled' }
-    });
+      }
+    ]);
 
-    const rawContent = completion.choices[0]?.message?.content || '{}';
     let seoData;
     try {
       const cleaned = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

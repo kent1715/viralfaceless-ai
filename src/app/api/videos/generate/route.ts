@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
-import ZAI from 'z-ai-web-dev-sdk';
+import { aiChatCompletion } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,14 +27,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate video production plan using LLM
-    const zai = await ZAI.create();
-
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert video producer specializing in faceless social media content. You create detailed production plans for short-form videos (TikTok, YouTube Shorts, Instagram Reels).
+    // Generate video production plan using AI
+    const rawContent = await aiChatCompletion([
+      {
+        role: 'system',
+        content: `You are an expert video producer specializing in faceless social media content. You create detailed production plans for short-form videos (TikTok, YouTube Shorts, Instagram Reels).
 
 Given a script, you create a comprehensive video production plan that includes:
 - Subtitle segments (text to display on screen with timing)
@@ -55,22 +52,19 @@ You must respond with valid JSON containing:
 - "aspectRatio": Recommended aspect ratio ("9:16" for vertical, "16:9" for horizontal)
 
 Respond ONLY with valid JSON, no markdown or extra text.`
-        },
-        {
-          role: 'user',
-          content: `Create a video production plan for this faceless video script:
+      },
+      {
+        role: 'user',
+        content: `Create a video production plan for this faceless video script:
 
 "${script}"
 
 Style: ${style}
 
 Return the production plan as JSON.`
-        }
-      ],
-      thinking: { type: 'disabled' }
-    });
+      }
+    ]);
 
-    const rawContent = completion.choices[0]?.message?.content || '{}';
     let videoPlan;
     try {
       const cleaned = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

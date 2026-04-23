@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
-import ZAI from 'z-ai-web-dev-sdk';
+import { aiChatCompletion } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,14 +27,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate script using LLM
-    const zai = await ZAI.create();
-
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert scriptwriter for viral faceless social media videos. You write scripts optimized for short-form content (30-90 seconds) on TikTok, YouTube Shorts, and Instagram Reels.
+    // Generate script using AI
+    const rawContent = await aiChatCompletion([
+      {
+        role: 'system',
+        content: `You are an expert scriptwriter for viral faceless social media videos. You write scripts optimized for short-form content (30-90 seconds) on TikTok, YouTube Shorts, and Instagram Reels.
 
 You write scripts that:
 - Hook viewers in the first 3 seconds
@@ -54,10 +51,10 @@ You must respond with valid JSON containing these fields:
 Write in ${style} style with a ${tone} tone. Target emotion: ${targetEmotion || 'curiosity'}.
 
 Respond ONLY with valid JSON, no markdown or extra text.`
-        },
-        {
-          role: 'user',
-          content: `Write a viral faceless video script based on:
+      },
+      {
+        role: 'user',
+        content: `Write a viral faceless video script based on:
 - Title: "${ideaTitle}"
 - Hook concept: "${hook}"
 - Content angle: "${contentAngle}"
@@ -66,12 +63,9 @@ Respond ONLY with valid JSON, no markdown or extra text.`
 - Tone: ${tone}
 
 Return the script as JSON.`
-        }
-      ],
-      thinking: { type: 'disabled' }
-    });
+      }
+    ]);
 
-    const rawContent = completion.choices[0]?.message?.content || '{}';
     let scriptData;
     try {
       const cleaned = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
