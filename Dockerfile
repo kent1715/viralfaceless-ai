@@ -1,15 +1,6 @@
-# ── Stage 1: Dependencies ─────────────────────────────────
-FROM node:20-alpine AS base
-RUN apk add --no-cache python3 py3-pip
-RUN pip install --break-system-packages edge-tts
+# ── Stage 1: Build ────────────────────────────────────────
+FROM node:20-alpine AS builder
 
-WORKDIR /app
-
-COPY package.json bun.lock* ./
-RUN npm install --production 2>/dev/null || bun install --production
-
-# ── Stage 2: Build ───────────────────────────────────────
-FROM base AS builder
 WORKDIR /app
 
 COPY package.json bun.lock* ./
@@ -23,7 +14,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build 2>/dev/null || bun run build
 
-# ── Stage 3: Production ──────────────────────────────────
+# Run prisma db push during build to create initial DB schema
+RUN DATABASE_URL=file:/app/data/init.db npx prisma db push --skip-generate 2>/dev/null || echo "Build-time DB init skipped"
+
+# ── Stage 2: Production ──────────────────────────────────
 FROM node:20-alpine AS runner
 
 RUN apk add --no-cache python3 py3-pip dumb-init
@@ -43,27 +37,22 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Prisma - client, CLI binary, and engine for migrations
-COPY --from=builder /app/prisma ./prisma
+# Prisma client only (for runtime queries)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
-# Create symlink for prisma binary
-RUN ln -sf ../prisma/build/index.js /app/node_modules/.bin/prisma 2>/dev/null; \
-    chmod +x /app/node_modules/prisma/build/index.js 2>/dev/null; \
-    true
+# Copy schema for reference
+COPY --from=builder /app/prisma ./prisma
 
-# Create data directory for SQLite
+# Create data directory with proper permissions
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
-# Copy entrypoint
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Copy the initialized database if it exists
+COPY --from=builder /app/data/init.db /app/data/prod.db 2>/dev/null || true
+RUN chown nextjs:nodejs /app/data/prod.db 2>/dev/null || true
 
 USER nextjs
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["node", "server.js"]
+CMD ["dumb-init", "node", "server.js"]
