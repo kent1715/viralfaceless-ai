@@ -47,9 +47,9 @@ COPY --from=builder /app/prisma ./prisma
 # Create data directory with proper permissions
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
-# Copy the initialized database if it exists
-COPY --from=builder /app/data/init.db /app/data/prod.db 2>/dev/null || true
-RUN chown nextjs:nodejs /app/data/prod.db 2>/dev/null || true
+# Copy the initialized database from build
+COPY --from=builder /app/data/init.db /app/data/prod.db
+RUN chown nextjs:nodejs /app/data/prod.db
 
 USER nextjs
 
