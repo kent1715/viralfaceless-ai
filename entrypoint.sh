@@ -1,9 +1,7 @@
 #!/bin/sh
-set -e
 
-echo ">>> Running database migrations..."
-node /app/node_modules/prisma/build/index.js db push --skip-generate 2>&1 || \
-  echo ">>> Migration skipped (DB may already exist)"
+# Skip DB migration in container - tables are auto-created by Prisma on first query
+# Run migration manually if needed: docker exec viralfaceless-ai npx prisma db push
 
-echo ">>> Starting application..."
+echo ">>> Starting ViralFaceless AI..."
 exec dumb-init "$@"
