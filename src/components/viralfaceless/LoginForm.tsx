@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginForm() {
   const { setUser, setToken, setCurrentView } = useStore();
+  const { t } = useI18n();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,19 +30,19 @@ export default function LoginForm() {
 
   const validate = (): boolean => {
     if (!email.trim()) {
-      setError('Email is required');
+      setError(t('login.error.emailRequired'));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('login.error.emailInvalid'));
       return false;
     }
     if (!password.trim()) {
-      setError('Password is required');
+      setError(t('login.error.passwordRequired'));
       return false;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('login.error.passwordMin'));
       return false;
     }
     setError('');
@@ -61,7 +63,7 @@ export default function LoginForm() {
       setCurrentView('dashboard');
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Login failed. Please try again.';
+        err instanceof Error ? err.message : t('login.error.failed');
       setError(message);
     } finally {
       setLoading(false);
@@ -105,16 +107,16 @@ export default function LoginForm() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">ViralFaceless AI</h1>
           <p className="text-muted-foreground mt-1">
-            Create viral faceless content with AI
+            {t('brand.tagline')}
           </p>
         </motion.div>
 
         {/* Login card */}
         <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl shadow-black/20">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl">Welcome back</CardTitle>
+            <CardTitle className="text-xl">{t('login.welcome')}</CardTitle>
             <CardDescription>
-              Sign in to your account to continue creating
+              {t('login.subtitle')}
             </CardDescription>
           </CardHeader>
 
@@ -133,13 +135,13 @@ export default function LoginForm() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('login.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('login.emailPlaceholder')}
                     className="pl-10 bg-background/50"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -149,13 +151,13 @@ export default function LoginForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('login.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder={t('login.passwordPlaceholder')}
                     className="pl-10 bg-background/50"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -174,24 +176,24 @@ export default function LoginForm() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
+                    {t('login.submitting')}
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {t('login.submit')}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
               </Button>
 
               <p className="text-sm text-muted-foreground">
-                Don&apos;t have an account?{' '}
+                {t('login.noAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => setCurrentView('register')}
                   className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                 >
-                  Create one free
+                  {t('login.createFree')}
                 </button>
               </p>
             </CardFooter>

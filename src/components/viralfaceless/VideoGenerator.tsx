@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import type { VideoPlan, SubtitleSegment, BRollSuggestion } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,19 +39,19 @@ import {
 
 // ─── Video Styles ───────────────────────────────────────────────
 const VIDEO_STYLES = [
-  { value: 'cinematic', label: 'Cinematic', icon: '🎬', description: 'Dramatic wide shots and slow transitions' },
-  { value: 'tiktok-fast', label: 'TikTok Fast', icon: '⚡', description: 'Quick cuts, zooms, and fast pacing' },
-  { value: 'documentary', label: 'Documentary', icon: '📹', description: 'Informative style with B-roll overlays' },
-  { value: 'minimal', label: 'Minimal', icon: '✨', description: 'Clean, text-focused, fewer transitions' },
+  { value: 'cinematic', labelKey: 'video.style.cinematic', icon: '🎬', descKey: 'video.style.cinematicDesc' },
+  { value: 'tiktok-fast', labelKey: 'video.style.tiktok', icon: '⚡', descKey: 'video.style.tiktokDesc' },
+  { value: 'documentary', labelKey: 'video.style.documentary', icon: '📹', descKey: 'video.style.documentaryDesc' },
+  { value: 'minimal', labelKey: 'video.style.minimal', icon: '✨', descKey: 'video.style.minimalDesc' },
 ] as const;
 
 // ─── Generation Steps ───────────────────────────────────────────
 const GEN_STEPS = [
-  { label: 'Analyzing script structure...', icon: '📝' },
-  { label: 'Generating subtitles timeline...', icon: '💬' },
-  { label: 'Matching B-roll footage...', icon: '🎬' },
-  { label: 'Planning cut points...', icon: '✂️' },
-  { label: 'Finalizing video plan...', icon: '✅' },
+  { labelKey: 'video.analyzing', icon: '📝' },
+  { labelKey: 'video.genSubtitles', icon: '💬' },
+  { labelKey: 'video.matchingBroll', icon: '🎬' },
+  { labelKey: 'video.planningCuts', icon: '✂️' },
+  { labelKey: 'video.finalizing', icon: '✅' },
 ];
 
 // ─── Format timestamp ───────────────────────────────────────────
@@ -62,6 +63,7 @@ function formatTime(seconds: number): string {
 
 // ─── Subtitle Timeline Component ────────────────────────────────
 function SubtitleTimeline({ subtitles, cutPoints }: { subtitles: SubtitleSegment[]; cutPoints: number[] }) {
+  const { t } = useI18n();
   if (!subtitles.length) return null;
   const maxTime = Math.max(...subtitles.map((s) => s.endTime), 60);
 
@@ -70,7 +72,7 @@ function SubtitleTimeline({ subtitles, cutPoints }: { subtitles: SubtitleSegment
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Subtitles className="size-4 text-purple-400" />
-          Subtitles Timeline
+          {t('video.subtitles')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -151,6 +153,7 @@ function SubtitleTimeline({ subtitles, cutPoints }: { subtitles: SubtitleSegment
 
 // ─── B-Roll Suggestions Component ───────────────────────────────
 function BRollSuggestions({ bRolls }: { bRolls: BRollSuggestion[] }) {
+  const { t } = useI18n();
   if (!bRolls.length) return null;
 
   const COLORS = [
@@ -167,8 +170,8 @@ function BRollSuggestions({ bRolls }: { bRolls: BRollSuggestion[] }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <ImageIcon className="size-4 text-amber-400" />
-          B-Roll Suggestions
-          <Badge variant="outline" className="ml-auto">{bRolls.length} matches</Badge>
+          {t('video.brollSuggestions')}
+          <Badge variant="outline" className="ml-auto">{t('video.matches').replace('{n}', bRolls.length.toString())}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -207,6 +210,7 @@ function BRollSuggestions({ bRolls }: { bRolls: BRollSuggestion[] }) {
 
 // ─── Keyword Highlights ─────────────────────────────────────────
 function KeywordHighlights({ keywords }: { keywords: string[] }) {
+  const { t } = useI18n();
   if (!keywords.length) return null;
 
   const COLORS = [
@@ -223,8 +227,8 @@ function KeywordHighlights({ keywords }: { keywords: string[] }) {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Type className="size-4 text-cyan-400" />
-          Keyword Highlights
-          <Badge variant="outline" className="ml-auto">{keywords.length} keywords</Badge>
+          {t('video.keywordHighlights')}
+          <Badge variant="outline" className="ml-auto">{t('video.keywords').replace('{n}', keywords.length.toString())}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -252,6 +256,7 @@ function KeywordHighlights({ keywords }: { keywords: string[] }) {
 
 // ─── Summary Card ───────────────────────────────────────────────
 function SummaryCard({ plan }: { plan: VideoPlan }) {
+  const { t } = useI18n();
   const totalDuration = plan.subtitles.length
     ? Math.max(...plan.subtitles.map((s) => s.endTime))
     : 0;
@@ -262,7 +267,7 @@ function SummaryCard({ plan }: { plan: VideoPlan }) {
     <Card className="border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-transparent">
       <CardContent className="py-4">
         <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-3">
-          Video Plan Summary
+          {t('video.summary')}
         </h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
@@ -270,21 +275,21 @@ function SummaryCard({ plan }: { plan: VideoPlan }) {
               <Clock className="size-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{formatTime(totalDuration)}</p>
-            <p className="text-xs text-muted-foreground">Duration</p>
+            <p className="text-xs text-muted-foreground">{t('video.duration')}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Scissors className="size-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{cutCount}</p>
-            <p className="text-xs text-muted-foreground">Cut Points</p>
+            <p className="text-xs text-muted-foreground">{t('video.cutPoints')}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Film className="size-4 text-foreground" />
             </div>
             <p className="text-lg font-bold text-foreground">{bRollCount}</p>
-            <p className="text-xs text-muted-foreground">B-Roll</p>
+            <p className="text-xs text-muted-foreground">{t('video.broll')}</p>
           </div>
         </div>
       </CardContent>
@@ -294,6 +299,7 @@ function SummaryCard({ plan }: { plan: VideoPlan }) {
 
 // ─── Main Component ─────────────────────────────────────────────
 export default function VideoGenerator() {
+  const { t } = useI18n();
   const {
     user,
     currentScript,
@@ -319,11 +325,11 @@ export default function VideoGenerator() {
   const handleGeneratePlan = useCallback(async () => {
     const textToUse = scriptText || currentScript?.fullScript;
     if (!textToUse?.trim()) {
-      toast.error('Please enter or select a script first');
+      toast.error(t('video.needScript'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits! Purchase more to continue.');
+      toast.error(t('video.notEnoughCredits'));
       return;
     }
 
@@ -351,13 +357,13 @@ export default function VideoGenerator() {
       if (data.remainingCredits !== undefined) {
         setUser({ ...user, credits: data.remainingCredits });
       }
-      toast.success('Video plan generated successfully!');
+      toast.success(t('video.generated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate video plan');
+      toast.error(err instanceof Error ? err.message : t('video.failed'));
     } finally {
       setVideoLoading(false);
     }
-  }, [scriptText, currentScript, videoStyle, user, setVideoPlan, setVideoLoading, setUser]);
+  }, [scriptText, currentScript, videoStyle, user, setVideoPlan, setVideoLoading, setUser, t]);
 
   // ── Export Plan ──────────────────────────────────────────────
   const handleExportPlan = useCallback(() => {
@@ -370,8 +376,8 @@ export default function VideoGenerator() {
     link.download = `video-plan-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('Video plan exported as JSON!');
-  }, [videoPlan]);
+    toast.success(t('video.exported'));
+  }, [videoPlan, t]);
 
   return (
     <div className="space-y-6">
@@ -379,10 +385,10 @@ export default function VideoGenerator() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Video className="size-6 text-purple-400" />
-          Video Generator
+          {t('video.title')}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Generate a complete video production plan with subtitles, B-roll, and cut points.
+          {t('video.subtitle')}
         </p>
       </div>
 
@@ -391,12 +397,12 @@ export default function VideoGenerator() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Clapperboard className="size-4 text-purple-400" />
-            Script
+            {t('video.script')}
           </CardTitle>
           <CardDescription>
             {currentScript?.fullScript
-              ? 'Using script from Script Generator'
-              : 'Paste your script below'}
+              ? t('video.usingScript')
+              : t('video.pasteScript')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -405,7 +411,7 @@ export default function VideoGenerator() {
             onChange={(e) => setScriptText(e.target.value)}
             rows={6}
             className="bg-background border-border text-sm resize-y"
-            placeholder="Paste your script here..."
+            placeholder={t('video.pastePlaceholder')}
           />
         </CardContent>
       </Card>
@@ -413,7 +419,7 @@ export default function VideoGenerator() {
       {/* ── Video Style ────────────────────────────────────── */}
       <div>
         <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 block">
-          Video Style
+          {t('video.style')}
         </Label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {VIDEO_STYLES.map((vs) => {
@@ -432,10 +438,10 @@ export default function VideoGenerator() {
               >
                 <span className="text-2xl">{vs.icon}</span>
                 <span className={`text-xs font-semibold ${isActive ? 'text-purple-300' : 'text-foreground'}`}>
-                  {vs.label}
+                  {t(vs.labelKey)}
                 </span>
                 <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                  {vs.description}
+                  {t(vs.descKey)}
                 </span>
               </motion.button>
             );
@@ -454,9 +460,9 @@ export default function VideoGenerator() {
         ) : (
           <Video className="size-5 mr-2" />
         )}
-        Generate Video Plan
+        {t('video.generate')}
         {!videoLoading && user && (
-          <span className="ml-2 text-xs opacity-70">(-1 credit)</span>
+          <span className="ml-2 text-xs opacity-70">{t('common.credit')}</span>
         )}
       </Button>
 
@@ -488,7 +494,7 @@ export default function VideoGenerator() {
                     i <= genStep ? 'text-foreground' : 'text-muted-foreground'
                   }`}
                 >
-                  {step.label}
+                  {t(step.labelKey)}
                 </span>
                 {i < genStep && <Check className="size-4 text-emerald-400 ml-auto" />}
                 {i === genStep && (
@@ -531,7 +537,7 @@ export default function VideoGenerator() {
               className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
             >
               <Download className="size-4 mr-2" />
-              Export Plan (JSON)
+              {t('video.exportJson')}
             </Button>
           </motion.div>
         )}

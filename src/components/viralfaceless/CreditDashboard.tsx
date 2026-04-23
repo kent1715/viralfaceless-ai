@@ -45,17 +45,12 @@ import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { PAYMENT_PLANS, PAYMENT_METHODS } from '@/lib/constants';
 import type { PaymentRecord } from '@/lib/types';
+import { useI18n } from '@/lib/i18n';
 
 const METHOD_ICONS: Record<string, React.ReactNode> = {
   qris: <QrCode className="h-5 w-5" />,
   bank_transfer: <Building2 className="h-5 w-5" />,
   ewallet: <Wallet className="h-5 w-5" />,
-};
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: 'Pending', color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20' },
-  success: { label: 'Success', color: 'bg-green-500/15 text-green-400 border-green-500/20' },
-  failed: { label: 'Failed', color: 'bg-red-500/15 text-red-400 border-red-500/20' },
 };
 
 const MOCK_PAYMENTS: PaymentRecord[] = [
@@ -85,12 +80,12 @@ const MOCK_PAYMENTS: PaymentRecord[] = [
   },
 ];
 
-const USAGE_DATA = [
-  { label: 'Ideas', count: 5 },
-  { label: 'Scripts', count: 3 },
-  { label: 'TTS', count: 4 },
-  { label: 'Thumbnails', count: 2 },
-  { label: 'SEO', count: 2 },
+const USAGE_ITEMS = [
+  { key: 'credits.usage.ideas', count: 5 },
+  { key: 'credits.usage.scripts', count: 3 },
+  { key: 'credits.usage.tts', count: 4 },
+  { key: 'credits.usage.thumbnails', count: 2 },
+  { key: 'credits.usage.seo', count: 2 },
 ];
 
 function formatRupiah(amount: number): string {
@@ -103,6 +98,7 @@ function formatRupiah(amount: number): string {
 }
 
 export default function CreditDashboard() {
+  const { t } = useI18n();
   const { user, setPayments, payments } = useStore();
   const [creditBalance, setCreditBalance] = useState(user?.credits || 0);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -115,6 +111,12 @@ export default function CreditDashboard() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>(MOCK_PAYMENTS);
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    pending: { label: t('credits.status.pending'), color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20' },
+    success: { label: t('credits.status.success'), color: 'bg-green-500/15 text-green-400 border-green-500/20' },
+    failed: { label: t('credits.status.failed'), color: 'bg-red-500/15 text-red-400 border-red-500/20' },
+  };
 
   // Fetch credits balance on mount
   useEffect(() => {
@@ -141,7 +143,7 @@ export default function CreditDashboard() {
   const handleBuyCustom = () => {
     const amount = parseInt(customCredits);
     if (!amount || amount < 1) {
-      toast.error('Please enter a valid number of credits');
+      toast.error(t('credits.error.invalidAmount'));
       return;
     }
     setSelectedPlan(null);
@@ -175,9 +177,9 @@ export default function CreditDashboard() {
       setPaymentHistory((prev) => [newPayment, ...prev]);
       setPayments(paymentHistory);
 
-      toast.success(`Successfully added ${credits} credits!`);
+      toast.success(t('credits.success.added').replace('{n}', String(credits)));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Payment failed';
+      const message = err instanceof Error ? err.message : t('credits.paymentFailed');
       toast.error(message);
     } finally {
       setIsProcessing(false);
@@ -200,9 +202,9 @@ export default function CreditDashboard() {
           <Coin className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Credits & Payments</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('credits.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your credits and buy more
+            {t('credits.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -217,7 +219,7 @@ export default function CreditDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Available Credits</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('credits.available')}</p>
                 <div className="flex items-center gap-3">
                   <Coin className="h-8 w-8 text-yellow-400" />
                   <span className="text-4xl font-bold text-foreground">
@@ -228,8 +230,7 @@ export default function CreditDashboard() {
               <div className="text-right">
                 <Gift className="h-8 w-8 text-purple-400 mb-1" />
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-purple-400 font-medium">{creditsToNext}</span> credits
-                  to next reward
+                  {t('credits.toNextReward').replace('{n}', String(creditsToNext))}
                 </p>
               </div>
             </div>
@@ -251,14 +252,14 @@ export default function CreditDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-400" />
-              Recent Usage
+              {t('credits.recentUsage')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {USAGE_DATA.map((item) => (
-                <div key={item.label} className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
+              {USAGE_ITEMS.map((item) => (
+                <div key={item.key} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{t(item.key)}</span>
                   <div className="flex items-center gap-2 flex-1 mx-4">
                     <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
                       <motion.div
@@ -285,7 +286,7 @@ export default function CreditDashboard() {
       >
         <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <ShoppingCart className="h-4 w-4" />
-          Buy Credits
+          {t('credits.buyCredits')}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {PAYMENT_PLANS.map((plan) => (
@@ -309,7 +310,7 @@ export default function CreditDashboard() {
                   </div>
                   {plan.value === 'premium' && (
                     <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs">
-                      Popular
+                      {t('credits.popular')}
                     </Badge>
                   )}
                 </div>
@@ -351,12 +352,12 @@ export default function CreditDashboard() {
                   {plan.value === 'premium' ? (
                     <>
                       <Crown className="mr-2 h-4 w-4" />
-                      Upgrade
+                      {t('credits.upgrade')}
                     </>
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      Buy Now
+                      {t('credits.buyNow')}
                     </>
                   )}
                 </Button>
@@ -371,14 +372,14 @@ export default function CreditDashboard() {
             <div className="flex items-center gap-3">
               <div className="flex-1 space-y-2">
                 <Label className="text-sm font-medium text-foreground">
-                  Custom Credits
+                  {t('credits.customCredits')}
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     type="number"
                     value={customCredits}
                     onChange={(e) => setCustomCredits(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder={t('credits.enterAmount')}
                     min={1}
                     className="bg-background border-border text-foreground"
                   />
@@ -388,12 +389,12 @@ export default function CreditDashboard() {
                     className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold whitespace-nowrap"
                   >
                     <Coin className="mr-2 h-4 w-4" />
-                    Buy
+                    {t('credits.buy')}
                   </Button>
                 </div>
                 {customCredits && parseInt(customCredits) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Total:{' '}
+                    {t('credits.total')}{' '}
                     <span className="text-foreground font-medium">
                       {formatRupiah(parseInt(customCredits) * 1000)}
                     </span>
@@ -413,12 +414,12 @@ export default function CreditDashboard() {
               {paymentSuccess ? (
                 <>
                   <Sparkles className="h-5 w-5 text-yellow-400" />
-                  Payment Successful!
+                  {t('credits.paymentSuccess')}
                 </>
               ) : (
                 <>
                   <Wallet className="h-5 w-5 text-purple-400" />
-                  Complete Payment
+                  {t('credits.completePayment')}
                 </>
               )}
             </DialogTitle>
@@ -436,19 +437,19 @@ export default function CreditDashboard() {
                   <Check className="h-10 w-10 text-green-400" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-1">
-                  Credits Added!
+                  {t('credits.creditsAdded')}
                 </h3>
                 <p className="text-2xl font-bold text-purple-400 mb-2">
                   +{selectedPlan ? selectedPlan.credits : customCredits} credits
                 </p>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Your credits have been added to your account
+                  {t('credits.creditsAddedToAccount')}
                 </p>
                 <Button
                   onClick={() => setPaymentDialogOpen(false)}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
                 >
-                  Done
+                  {t('credits.done')}
                 </Button>
               </motion.div>
             ) : (
@@ -461,7 +462,7 @@ export default function CreditDashboard() {
                 {/* Order Summary */}
                 <div className="rounded-lg bg-muted/50 p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Plan</span>
+                    <span className="text-muted-foreground">{t('credits.plan')}</span>
                     <span className="text-foreground font-medium">
                       {selectedPlan
                         ? selectedPlan.label
@@ -469,14 +470,14 @@ export default function CreditDashboard() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Credits</span>
+                    <span className="text-muted-foreground">{t('credits.credits')}</span>
                     <span className="text-foreground font-medium">
                       {selectedPlan ? selectedPlan.credits : customCredits}
                     </span>
                   </div>
                   <Separator className="bg-border" />
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium text-foreground">Total</span>
+                    <span className="text-sm font-medium text-foreground">{t('credits.total')}</span>
                     <span className="text-lg font-bold text-foreground">
                       {formatRupiah(
                         selectedPlan
@@ -490,7 +491,7 @@ export default function CreditDashboard() {
                 {/* Payment Method */}
                 <div className="space-y-3">
                   <Label className="text-sm font-medium text-foreground">
-                    Payment Method
+                    {t('credits.paymentMethod')}
                   </Label>
                   <RadioGroup
                     value={selectedMethod}
@@ -529,7 +530,7 @@ export default function CreditDashboard() {
                     onClick={() => setPaymentDialogOpen(false)}
                     className="border-border text-muted-foreground"
                   >
-                    Cancel
+                    {t('credits.cancel')}
                   </Button>
                   <Button
                     onClick={handleConfirmPayment}
@@ -539,12 +540,12 @@ export default function CreditDashboard() {
                     {isProcessing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
+                        {t('credits.processing')}
                       </>
                     ) : (
                       <>
                         <Wallet className="mr-2 h-4 w-4" />
-                        Confirm Payment
+                        {t('credits.confirmPayment')}
                       </>
                     )}
                   </Button>
@@ -565,7 +566,7 @@ export default function CreditDashboard() {
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-purple-400" />
-              Payment History
+              {t('credits.history')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -573,11 +574,11 @@ export default function CreditDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Date</TableHead>
-                    <TableHead className="text-muted-foreground">Amount</TableHead>
-                    <TableHead className="text-muted-foreground">Method</TableHead>
-                    <TableHead className="text-muted-foreground">Credits</TableHead>
-                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">{t('credits.historyDate')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('credits.historyAmount')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('credits.historyMethod')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('credits.historyCredits')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('credits.historyStatus')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -625,7 +626,7 @@ export default function CreditDashboard() {
             {paymentHistory.length === 0 && (
               <div className="flex flex-col items-center py-12 text-center">
                 <ShoppingCart className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground">No payment history yet</p>
+                <p className="text-muted-foreground">{t('credits.noHistory')}</p>
               </div>
             )}
           </CardContent>

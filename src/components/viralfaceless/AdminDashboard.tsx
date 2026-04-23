@@ -49,6 +49,7 @@ import {
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import type { AdminStats } from '@/lib/types';
+import { useI18n } from '@/lib/i18n';
 
 interface AdminUser {
   id: string;
@@ -82,23 +83,23 @@ const MOCK_USERS: AdminUser[] = [
 ];
 
 const REVENUE_DATA = [
-  { day: 'Mon', value: 2400000 },
-  { day: 'Tue', value: 1800000 },
-  { day: 'Wed', value: 3200000 },
-  { day: 'Thu', value: 2900000 },
-  { day: 'Fri', value: 4100000 },
-  { day: 'Sat', value: 3500000 },
-  { day: 'Sun', value: 2600000 },
+  { day: 'admin.days.mon', value: 2400000 },
+  { day: 'admin.days.tue', value: 1800000 },
+  { day: 'admin.days.wed', value: 3200000 },
+  { day: 'admin.days.thu', value: 2900000 },
+  { day: 'admin.days.fri', value: 4100000 },
+  { day: 'admin.days.sat', value: 3500000 },
+  { day: 'admin.days.sun', value: 2600000 },
 ];
 
 const SIGNUP_DATA = [
-  { day: 'Mon', value: 45 },
-  { day: 'Tue', value: 32 },
-  { day: 'Wed', value: 58 },
-  { day: 'Thu', value: 41 },
-  { day: 'Fri', value: 67 },
-  { day: 'Sat', value: 52 },
-  { day: 'Sun', value: 38 },
+  { day: 'admin.days.mon', value: 45 },
+  { day: 'admin.days.tue', value: 32 },
+  { day: 'admin.days.wed', value: 58 },
+  { day: 'admin.days.thu', value: 41 },
+  { day: 'admin.days.fri', value: 67 },
+  { day: 'admin.days.sat', value: 52 },
+  { day: 'admin.days.sun', value: 38 },
 ];
 
 const PLAN_COLORS: Record<string, string> = {
@@ -123,6 +124,7 @@ function formatCompact(num: number): string {
 }
 
 export default function AdminDashboard() {
+  const { t } = useI18n();
   const { user, adminStats, setAdminStats } = useStore();
   const [stats, setStats] = useState<AdminStats>(adminStats || MOCK_STATS);
   const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
@@ -165,7 +167,7 @@ export default function AdminDashboard() {
     if (!selectedUser) return;
     const credits = parseInt(creditsToAdd);
     if (!credits || credits < 1) {
-      toast.error('Please enter a valid number of credits');
+      toast.error(t('admin.error.invalidCredits'));
       return;
     }
 
@@ -179,12 +181,12 @@ export default function AdminDashboard() {
             : u
         )
       );
-      toast.success(`Added ${credits} credits to ${selectedUser.name}`);
+      toast.success(t('admin.success.addedCredits').replace('{n}', String(credits)).replace('{name}', selectedUser.name));
       setAddCreditsDialogOpen(false);
       setCreditsToAdd('');
       setSelectedUser(null);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add credits';
+      const message = err instanceof Error ? err.message : t('admin.error.addCredits');
       toast.error(message);
     } finally {
       setIsUpdating(false);
@@ -198,9 +200,9 @@ export default function AdminDashboard() {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, plan: newPlan } : u))
       );
-      toast.success(`Plan updated to ${newPlan}`);
+      toast.success(t('admin.success.planUpdated').replace('{plan}', newPlan));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to update plan';
+      const message = err instanceof Error ? err.message : t('admin.error.planUpdate');
       toast.error(message);
     } finally {
       setIsUpdating(false);
@@ -212,11 +214,11 @@ export default function AdminDashboard() {
     setIsUpdating(true);
     try {
       setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
-      toast.success(`User ${selectedUser.name} deleted`);
+      toast.success(t('admin.success.userDeleted').replace('{name}', selectedUser.name));
       setDeleteDialogOpen(false);
       setSelectedUser(null);
     } catch {
-      toast.error('Failed to delete user');
+      toast.error(t('admin.error.userDelete'));
     } finally {
       setIsUpdating(false);
     }
@@ -237,9 +239,9 @@ export default function AdminDashboard() {
           <Shield className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('admin.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Platform overview and user management
+            {t('admin.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -254,14 +256,14 @@ export default function AdminDashboard() {
           {[
             {
               icon: <Users className="h-5 w-5" />,
-              label: 'Total Users',
+              label: t('admin.totalUsers'),
               value: stats.totalUsers.toLocaleString(),
               color: 'from-blue-600 to-cyan-600',
               shadowColor: 'shadow-blue-500/25',
             },
             {
               icon: <DollarSign className="h-5 w-5" />,
-              label: 'Total Revenue',
+              label: t('admin.totalRevenue'),
               value: formatCompact(stats.totalRevenue),
               subtext: formatRupiah(stats.totalRevenue),
               color: 'from-green-600 to-emerald-600',
@@ -269,14 +271,14 @@ export default function AdminDashboard() {
             },
             {
               icon: <FileText className="h-5 w-5" />,
-              label: 'Content Generated',
+              label: t('admin.contentGenerated'),
               value: stats.totalContent.toLocaleString(),
               color: 'from-purple-600 to-pink-600',
               shadowColor: 'shadow-purple-500/25',
             },
             {
               icon: <Folder className="h-5 w-5" />,
-              label: 'Active Projects',
+              label: t('admin.activeProjects'),
               value: stats.activeProjects.toLocaleString(),
               color: 'from-orange-600 to-yellow-600',
               shadowColor: 'shadow-orange-500/25',
@@ -321,7 +323,7 @@ export default function AdminDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-400" />
-                Revenue (Last 7 Days)
+                {t('admin.revenue')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -337,7 +339,7 @@ export default function AdminDashboard() {
                       transition={{ duration: 0.6, delay: i * 0.08 }}
                       className="w-full rounded-t-md bg-gradient-to-t from-green-600 to-emerald-400 min-h-[4px]"
                     />
-                    <span className="text-xs text-muted-foreground">{item.day}</span>
+                    <span className="text-xs text-muted-foreground">{t(item.day)}</span>
                   </div>
                 ))}
               </div>
@@ -349,7 +351,7 @@ export default function AdminDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <UserPlus className="h-4 w-4 text-blue-400" />
-                User Signups (Last 7 Days)
+                {t('admin.signups')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -363,7 +365,7 @@ export default function AdminDashboard() {
                       transition={{ duration: 0.6, delay: i * 0.08 }}
                       className="w-full rounded-t-md bg-gradient-to-t from-blue-600 to-cyan-400 min-h-[4px]"
                     />
-                    <span className="text-xs text-muted-foreground">{item.day}</span>
+                    <span className="text-xs text-muted-foreground">{t(item.day)}</span>
                   </div>
                 ))}
               </div>
@@ -383,7 +385,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Users className="h-4 w-4 text-purple-400" />
-                User Management
+                {t('admin.userManagement')}
                 <span className="text-sm font-normal text-muted-foreground">
                   ({filteredUsers.length} users)
                 </span>
@@ -396,7 +398,7 @@ export default function AdminDashboard() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder="Search users..."
+                  placeholder={t('admin.searchUsers')}
                   className="pl-9 bg-background border-border text-foreground"
                 />
               </div>
@@ -407,12 +409,12 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-muted-foreground">Plan</TableHead>
-                    <TableHead className="text-muted-foreground">Credits</TableHead>
-                    <TableHead className="text-muted-foreground">Joined</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                    <TableHead className="text-muted-foreground">{t('admin.tableName')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('admin.tableEmail')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('admin.tablePlan')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('admin.tableCredits')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('admin.tableJoined')}</TableHead>
+                    <TableHead className="text-muted-foreground text-right">{t('admin.tableActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -498,7 +500,7 @@ export default function AdminDashboard() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t border-border">
                 <p className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
+                  {t('admin.page').replace('{n}', String(currentPage)).replace('{n}', String(totalPages))}
                 </p>
                 <div className="flex gap-1">
                   <Button
@@ -532,19 +534,19 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
               <Plus className="h-5 w-5 text-green-400" />
-              Add Credits
+              {t('admin.addCredits')}
             </DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-sm text-muted-foreground">User</p>
+                <p className="text-sm text-muted-foreground">{t('admin.addCreditsUser')}</p>
                 <p className="text-foreground font-medium">{selectedUser.name}</p>
                 <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">
-                  Current Credits
+                  {t('admin.addCreditsCurrent')}
                 </Label>
                 <p className="text-2xl font-bold text-foreground">
                   {selectedUser.credits}
@@ -552,13 +554,13 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground">
-                  Credits to Add
+                  {t('admin.addCreditsAmount')}
                 </Label>
                 <Input
                   type="number"
                   value={creditsToAdd}
                   onChange={(e) => setCreditsToAdd(e.target.value)}
-                  placeholder="Enter number of credits"
+                  placeholder={t('admin.addCreditsPlaceholder')}
                   min={1}
                   className="bg-background border-border text-foreground"
                 />
@@ -581,7 +583,7 @@ export default function AdminDashboard() {
                   ) : (
                     <Plus className="mr-2 h-4 w-4" />
                   )}
-                  Add Credits
+                  {t('admin.addCredits')}
                 </Button>
               </DialogFooter>
             </div>
@@ -595,15 +597,13 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-red-400" />
-              Delete User
+              {t('admin.deleteUser')}
             </DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete{' '}
-                <span className="text-foreground font-medium">{selectedUser.name}</span>? This
-                action cannot be undone.
+                {t('admin.deleteConfirm').replace('{name}', selectedUser.name)}
               </p>
               <DialogFooter className="gap-2">
                 <Button
@@ -624,7 +624,7 @@ export default function AdminDashboard() {
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}
-                  Delete User
+                  {t('admin.deleteUser')}
                 </Button>
               </DialogFooter>
             </div>

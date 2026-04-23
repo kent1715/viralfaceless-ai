@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
+import { I18nProvider, useI18n } from '@/lib/i18n';
 
 // Auth
 import LoginForm from '@/components/viralfaceless/LoginForm';
@@ -69,7 +70,7 @@ function ViewRouter() {
   );
 }
 
-export default function Home() {
+function AppContent() {
   const {
     isAuthenticated,
     currentView,
@@ -79,6 +80,7 @@ export default function Home() {
     setCurrentView,
     setProjects,
   } = useStore();
+  const { t } = useI18n();
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -151,7 +153,7 @@ export default function Home() {
             <div className="absolute -inset-2 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-700/20 animate-ping" />
           </div>
           <p className="text-muted-foreground text-sm font-medium">
-            Loading ViralFaceless AI...
+            {t('common.loading')}
           </p>
           <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
         </div>
@@ -179,21 +181,29 @@ export default function Home() {
         {/* Sticky Footer */}
         <footer className="border-t border-border bg-card px-6 py-3 mt-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <p>© 2025 ViralFaceless AI. All rights reserved.</p>
+            <p>{t('footer.copyright')}</p>
             <div className="flex items-center gap-4">
               <span className="hover:text-foreground cursor-pointer transition-colors">
-                Terms
+                {t('footer.terms')}
               </span>
               <span className="hover:text-foreground cursor-pointer transition-colors">
-                Privacy
+                {t('footer.privacy')}
               </span>
               <span className="hover:text-foreground cursor-pointer transition-colors">
-                Support
+                {t('footer.support')}
               </span>
             </div>
           </div>
         </footer>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 }

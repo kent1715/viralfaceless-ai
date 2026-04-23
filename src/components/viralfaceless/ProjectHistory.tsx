@@ -37,22 +37,7 @@ import {
 } from '@/components/ui/collapsible';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
-  in_progress: {
-    label: 'In Progress',
-    color: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
-  },
-  completed: {
-    label: 'Completed',
-    color: 'bg-green-500/15 text-green-400 border-green-500/20',
-  },
-  archived: {
-    label: 'Archived',
-    color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
-  },
-};
+import { useI18n } from '@/lib/i18n';
 
 interface ProjectDetail {
   ideas?: string[];
@@ -69,12 +54,29 @@ const MOCK_PROJECTS: ProjectDetail[] = [
 ];
 
 export default function ProjectHistory() {
+  const { t } = useI18n();
   const { projects, setProjects, setCurrentView } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    draft: { label: t('projects.status.draft'), color: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
+    in_progress: {
+      label: t('projects.status.inProgress'),
+      color: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+    },
+    completed: {
+      label: t('projects.status.completed'),
+      color: 'bg-green-500/15 text-green-400 border-green-500/20',
+    },
+    archived: {
+      label: t('projects.status.archived'),
+      color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
+    },
+  };
 
   // Initialize with mock data if projects is empty
   const allProjects = projects.length > 0
@@ -127,10 +129,10 @@ export default function ProjectHistory() {
     try {
       await api.projects.delete(projectToDelete);
       setProjects(projects.filter((p) => p.id !== projectToDelete));
-      toast.success('Project deleted');
+      toast.success(t('projects.deleted'));
     } catch {
       // Still remove from local state
-      toast.success('Project deleted');
+      toast.success(t('projects.deleted'));
     } finally {
       setDeleteDialogOpen(false);
       setProjectToDelete(null);
@@ -166,9 +168,9 @@ export default function ProjectHistory() {
             <FolderOpen className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Project History</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t('projects.title')}</h1>
             <p className="text-sm text-muted-foreground">
-              View and manage all your content projects
+              {t('projects.subtitle')}
             </p>
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function ProjectHistory() {
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg shadow-purple-500/25"
         >
           <Plus className="mr-2 h-4 w-4" />
-          New Project
+          {t('projects.newProject')}
         </Button>
       </motion.div>
 
@@ -193,7 +195,7 @@ export default function ProjectHistory() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects..."
+              placeholder={t('projects.searchProjects')}
               className="pl-9 bg-background border-border text-foreground"
             />
           </div>
@@ -286,7 +288,7 @@ export default function ProjectHistory() {
                                 className="h-7 px-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
                               >
                                 <Eye className="h-3 w-3 mr-1" />
-                                View
+                                {t('projects.view')}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -314,7 +316,7 @@ export default function ProjectHistory() {
                             <div className="space-y-2">
                               <h4 className="flex items-center gap-2 text-sm font-medium text-foreground">
                                 <Lightbulb className="h-4 w-4 text-yellow-400" />
-                                Ideas ({detail.ideas.length})
+                                {t('projects.ideas')} ({detail.ideas.length})
                               </h4>
                               <div className="space-y-1.5">
                                 {detail.ideas.map((idea, i) => (
@@ -334,7 +336,7 @@ export default function ProjectHistory() {
                             <div className="space-y-2">
                               <h4 className="flex items-center gap-2 text-sm font-medium text-foreground">
                                 <FileText className="h-4 w-4 text-blue-400" />
-                                Scripts ({detail.scripts.length})
+                                {t('projects.scripts')} ({detail.scripts.length})
                               </h4>
                               <div className="space-y-1.5">
                                 {detail.scripts.map((script, i) => (
@@ -356,14 +358,14 @@ export default function ProjectHistory() {
                               <p className="text-lg font-bold text-foreground">
                                 {detail.thumbnails}
                               </p>
-                              <p className="text-xs text-muted-foreground">Thumbnails</p>
+                              <p className="text-xs text-muted-foreground">{t('projects.thumbnails')}</p>
                             </div>
                             <div className="rounded-md bg-background/50 border border-border p-3 text-center">
                               <Search className="h-5 w-5 text-blue-400 mx-auto mb-1" />
                               <p className="text-lg font-bold text-foreground">
                                 {detail.seoData}
                               </p>
-                              <p className="text-xs text-muted-foreground">SEO Sets</p>
+                              <p className="text-xs text-muted-foreground">{t('projects.seoSets')}</p>
                             </div>
                           </div>
 
@@ -378,7 +380,7 @@ export default function ProjectHistory() {
                               }}
                             >
                               <ImageIcon className="mr-1.5 h-3 w-3" />
-                              Generate Thumbnails
+                              {t('projects.genThumbnails')}
                             </Button>
                             <Button
                               size="sm"
@@ -389,7 +391,7 @@ export default function ProjectHistory() {
                               }}
                             >
                               <Sparkles className="mr-1.5 h-3 w-3" />
-                              Generate SEO
+                              {t('projects.genSeo')}
                             </Button>
                           </div>
                         </CardContent>
@@ -412,18 +414,17 @@ export default function ProjectHistory() {
               <FolderOpen className="h-16 w-16 text-purple-400/60" />
             </div>
             <h3 className="text-xl font-bold text-foreground mb-2">
-              No projects yet
+              {t('projects.noProjects')}
             </h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-6">
-              Create your first viral content project and start generating ideas, scripts,
-              thumbnails, and more!
+              {t('projects.noProjectsDesc')}
             </p>
             <Button
               onClick={handleNewProject}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg shadow-purple-500/25 px-8"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              Create Your First Viral Content
+              {t('projects.createFirst')}
             </Button>
           </motion.div>
         )}
@@ -435,13 +436,12 @@ export default function ProjectHistory() {
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-red-400" />
-              Delete Project
+              {t('projects.delete')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete this project? All associated content will be
-              permanently removed.
+              {t('projects.deleteConfirm')}
             </p>
             <DialogFooter className="gap-2">
               <Button
@@ -460,7 +460,7 @@ export default function ProjectHistory() {
                 className="bg-red-600 hover:bg-red-700"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                {t('projects.deleteBtn')}
               </Button>
             </DialogFooter>
           </div>

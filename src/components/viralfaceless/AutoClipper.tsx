@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStore } from '@/lib/store';
+import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -126,12 +127,12 @@ function generateMockClips(url: string): DetectedClip[] {
 
 // ─── Analysis Steps ─────────────────────────────────────────────
 const ANALYSIS_STEPS = [
-  { label: 'Downloading video...', icon: '⬇️' },
-  { label: 'Analyzing audio track...', icon: '🔊' },
-  { label: 'Detecting scene changes...', icon: '🎬' },
-  { label: 'Finding highlights...', icon: '⭐' },
-  { label: 'Scoring engagement potential...', icon: '📊' },
-  { label: 'Generating clips...', icon: '✂️' },
+  { labelKey: 'clipper.downloading', icon: '⬇️' },
+  { labelKey: 'clipper.analyzingAudio', icon: '🔊' },
+  { labelKey: 'clipper.detectingScenes', icon: '🎬' },
+  { labelKey: 'clipper.findingHighlights', icon: '⭐' },
+  { labelKey: 'clipper.scoringEngagement', icon: '📊' },
+  { labelKey: 'clipper.generatingClips', icon: '✂️' },
 ];
 
 // ─── Engagement Score Color ─────────────────────────────────────
@@ -155,20 +156,21 @@ function ClipCard({
   clip: DetectedClip;
   onToggleSubtitles: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(clip.title);
     setCopied(true);
-    toast.success('Clip info copied!');
+    toast.success(t('clipper.clipCopied'));
     setTimeout(() => setCopied(false), 2000);
-  }, [clip.title]);
+  }, [clip.title, t]);
 
   const handleDownload = useCallback(() => {
-    toast.info('Download starting...', {
+    toast.info(t('clipper.downloadStarting'), {
       description: `"${clip.title}" - ${clip.duration}`,
     });
-  }, [clip.title, clip.duration]);
+  }, [clip.title, clip.duration, t]);
 
   return (
     <motion.div
@@ -196,7 +198,7 @@ function ClipCard({
             {clip.isBestMoment && (
               <div className="absolute top-1 left-1 bg-amber-500 rounded px-1 py-0.5">
                 <span className="text-[9px] text-white font-bold flex items-center gap-0.5">
-                  <Star className="size-2.5" /> BEST
+                  <Star className="size-2.5" /> {t('clipper.best')}
                 </span>
               </div>
             )}
@@ -263,7 +265,7 @@ function ClipCard({
                   className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
                 >
                   <Subtitles className="size-3" />
-                  Subs
+                  {t('clipper.subs')}
                 </Label>
                 <Switch
                   id={`subs-${clip.id}`}
@@ -281,6 +283,7 @@ function ClipCard({
 
 // ─── Main Component ─────────────────────────────────────────────
 export default function AutoClipper() {
+  const { t } = useI18n();
   const { user } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -301,11 +304,11 @@ export default function AutoClipper() {
   // ── Analyze video ───────────────────────────────────────────
   const handleAnalyze = useCallback(async () => {
     if (inputMode === 'url' && !videoUrl.trim()) {
-      toast.error('Please enter a video URL');
+      toast.error(t('clipper.noUrl'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits! Purchase more to continue.');
+      toast.error(t('clipper.notEnoughCredits'));
       return;
     }
 
@@ -323,13 +326,13 @@ export default function AutoClipper() {
       // Generate mock clips
       const mockClips = generateMockClips(videoUrl || 'uploaded-video');
       setClips(mockClips);
-      toast.success(`Found ${mockClips.length} viral clips!`);
+      toast.success(t('clipper.foundClips').replace('{n}', mockClips.length.toString()));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Analysis failed');
+      toast.error(err instanceof Error ? err.message : t('clipper.analysisFailed'));
     } finally {
       setIsAnalyzing(false);
     }
-  }, [inputMode, videoUrl, user]);
+  }, [inputMode, videoUrl, user, t]);
 
   // ── Drag & Drop handlers ────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -349,19 +352,19 @@ export default function AutoClipper() {
     if (files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('video/')) {
-        toast.success(`Video "${file.name}" selected for analysis`);
+        toast.success(t('clipper.videoSelected').replace('{name}', file.name));
       } else {
-        toast.error('Please drop a video file (MP4, MOV, AVI)');
+        toast.error(t('clipper.noFile'));
       }
     }
-  }, []);
+  }, [t]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      toast.success(`Video "${file.name}" selected for analysis`);
+      toast.success(t('clipper.videoSelected').replace('{name}', file.name));
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className="space-y-6">
@@ -369,11 +372,10 @@ export default function AutoClipper() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Scissors className="size-6 text-purple-400" />
-          Auto Clipper
+          {t('clipper.title')}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Upload a video or paste a YouTube URL. AI will find the most viral moments and
-          create clips automatically.
+          {t('clipper.subtitle')}
         </p>
       </div>
 
@@ -386,7 +388,7 @@ export default function AutoClipper() {
           size="sm"
         >
           <Link className="size-4 mr-1.5" />
-          YouTube URL
+          {t('clipper.youtubeUrl')}
         </Button>
         <Button
           variant={inputMode === 'upload' ? 'default' : 'outline'}
@@ -395,7 +397,7 @@ export default function AutoClipper() {
           size="sm"
         >
           <Upload className="size-4 mr-1.5" />
-          Upload File
+          {t('clipper.uploadFile')}
         </Button>
       </div>
 
@@ -411,7 +413,7 @@ export default function AutoClipper() {
             <Card>
               <CardContent className="py-4">
                 <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  YouTube URL
+                  {t('clipper.youtubeUrl')}
                 </Label>
                 <div className="flex gap-3">
                   <div className="relative flex-1">
@@ -419,7 +421,7 @@ export default function AutoClipper() {
                     <Input
                       value={videoUrl}
                       onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://youtube.com/watch?v=..."
+                      placeholder={t('clipper.urlPlaceholder')}
                       className="pl-10"
                       disabled={isAnalyzing}
                     />
@@ -438,7 +440,7 @@ export default function AutoClipper() {
             <Card>
               <CardContent className="py-4">
                 <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Upload Video
+                  {t('clipper.uploadFile')}
                 </Label>
                 <div
                   onDragOver={handleDragOver}
@@ -458,11 +460,11 @@ export default function AutoClipper() {
                   />
                   <p className="text-sm font-medium text-foreground mb-1">
                     {isDragging
-                      ? 'Drop your video here'
-                      : 'Drag & drop your video here'}
+                      ? t('clipper.dropzone')
+                      : t('clipper.dragDrop')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Supports MP4, MOV, AVI (max 500MB)
+                    {t('clipper.supportedFormats')}
                   </p>
                   <input
                     ref={fileInputRef}
@@ -489,9 +491,9 @@ export default function AutoClipper() {
         ) : (
           <Scissors className="size-5 mr-2" />
         )}
-        Analyze Video
+        {t('clipper.analyze')}
         {!isAnalyzing && user && (
-          <span className="ml-2 text-xs opacity-70">(-1 credit)</span>
+          <span className="ml-2 text-xs opacity-70">{t('common.credit')}</span>
         )}
       </Button>
 
@@ -509,7 +511,7 @@ export default function AutoClipper() {
                 <div className="flex items-center gap-3">
                   <Loader2 className="size-5 text-purple-400 animate-spin" />
                   <span className="text-sm font-medium text-foreground">
-                    AI is analyzing your video...
+                    {t('clipper.analyzing')}
                   </span>
                 </div>
                 <Progress
@@ -527,7 +529,7 @@ export default function AutoClipper() {
                       }`}
                     >
                       <span>{step.icon}</span>
-                      <span>{step.label}</span>
+                      <span>{t(step.labelKey)}</span>
                       {i < analysisStep && (
                         <Check className="size-3 text-emerald-400 ml-auto" />
                       )}
@@ -554,18 +556,17 @@ export default function AutoClipper() {
               <div>
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <Sparkles className="size-5 text-amber-400" />
-                  Detected Clips
+                  {t('clipper.detectedClips')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {clips.length} clips found •{' '}
-                  {clips.filter((c) => c.isBestMoment).length} best moments
+                  {t('clipper.clipsFound').replace('{n}', clips.length.toString()).replace('{n}', clips.filter((c) => c.isBestMoment).length.toString())}
                 </p>
               </div>
               <Badge
                 variant="outline"
                 className="bg-purple-500/15 text-purple-400 border-purple-500/30"
               >
-                Avg Score: {Math.round(clips.reduce((a, c) => a + c.engagementScore, 0) / clips.length)}
+                {t('clipper.avgScore').replace('{n}', Math.round(clips.reduce((a, c) => a + c.engagementScore, 0) / clips.length).toString())}
               </Badge>
             </div>
 
@@ -573,7 +574,7 @@ export default function AutoClipper() {
             <Card>
               <CardContent className="py-3">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Timeline Overview
+                  {t('clipper.timeline')}
                 </Label>
                 <div className="relative h-6 bg-muted rounded-lg overflow-hidden">
                   {clips.map((clip, i) => {
@@ -635,31 +636,29 @@ export default function AutoClipper() {
               <Button
                 variant="outline"
                 className="flex-1 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
-                onClick={() => toast.info('Downloading all clips...')}
+                onClick={() => toast.info(t('clipper.downloadStarting'))}
               >
                 <Download className="size-4 mr-2" />
-                Download All Clips
+                {t('clipper.downloadAll')}
               </Button>
               <Button
                 variant="outline"
                 className="flex-1 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
                 onClick={() =>
                   toast.success(
-                    `${clips.filter((c) => c.hasSubtitles).length} clips with subtitles ready`
+                    t('clipper.subsReady').replace('{n}', clips.filter((c) => c.hasSubtitles).length.toString())
                   )
                 }
               >
                 <Subtitles className="size-4 mr-2" />
-                Add Subtitles to All
+                {t('clipper.addAllSubs')}
               </Button>
             </div>
 
             {/* UI mock notice */}
             <div className="bg-muted/50 border border-dashed border-border rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground">
-                🧪 <strong>UI Preview Mode</strong> — Actual video processing requires FFmpeg
-                on the server. Clips shown are AI-generated suggestions based on the analysis
-                pipeline.
+                🧪 <strong>{t('clipper.previewTitle')}</strong> — {t('clipper.previewDesc')}
               </p>
             </div>
           </motion.div>

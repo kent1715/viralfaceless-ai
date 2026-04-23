@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -38,27 +39,27 @@ import type { ViewName } from '@/lib/types';
 
 interface NavItem {
   view: ViewName;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   adminOnly?: boolean;
 }
 
 const mainNavItems: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { view: 'idea-engine', label: 'Viral Ideas', icon: Lightbulb },
-  { view: 'script-generator', label: 'Script Generator', icon: FileText },
-  { view: 'tts-engine', label: 'Text to Speech', icon: Mic },
-  { view: 'video-generator', label: 'Video Generator', icon: Video },
-  { view: 'auto-clipper', label: 'Auto Clipper', icon: Scissors },
-  { view: 'thumbnail-generator', label: 'Thumbnail', icon: Image },
-  { view: 'seo-generator', label: 'SEO Generator', icon: Search },
-  { view: 'auto-posting', label: 'Auto Posting', icon: Calendar },
-  { view: 'credits', label: 'Credits', icon: Coins },
+  { view: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { view: 'idea-engine', labelKey: 'nav.ideas', icon: Lightbulb },
+  { view: 'script-generator', labelKey: 'nav.scripts', icon: FileText },
+  { view: 'tts-engine', labelKey: 'nav.tts', icon: Mic },
+  { view: 'video-generator', labelKey: 'nav.videos', icon: Video },
+  { view: 'auto-clipper', labelKey: 'nav.clipper', icon: Scissors },
+  { view: 'thumbnail-generator', labelKey: 'nav.thumbnail', icon: Image },
+  { view: 'seo-generator', labelKey: 'nav.seo', icon: Search },
+  { view: 'auto-posting', labelKey: 'nav.posting', icon: Calendar },
+  { view: 'credits', labelKey: 'nav.credits', icon: Coins },
 ];
 
 const adminNavItems: NavItem[] = [
-  { view: 'settings', label: 'Settings', icon: Settings },
-  { view: 'admin', label: 'Admin Panel', icon: Shield, adminOnly: true },
+  { view: 'settings', labelKey: 'nav.settings', icon: Settings },
+  { view: 'admin', labelKey: 'nav.admin', icon: Shield, adminOnly: true },
 ];
 
 function NavButton({
@@ -70,6 +71,7 @@ function NavButton({
   isActive: boolean;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   const Icon = item.icon;
 
   return (
@@ -88,7 +90,7 @@ function NavButton({
             isActive ? 'text-purple-400' : 'text-muted-foreground group-hover:text-foreground'
           }`}
         />
-        <span className="truncate">{item.label}</span>
+        <span className="truncate">{t(item.labelKey)}</span>
         {isActive && (
           <motion.div
             layoutId="sidebar-active"
@@ -114,6 +116,7 @@ function SidebarContent({
     sidebarOpen,
     setSidebarOpen,
   } = useStore();
+  const { t } = useI18n();
   const isMobile = useIsMobile();
 
   const handleNavClick = (view: ViewName) => {
@@ -154,7 +157,7 @@ function SidebarContent({
             <Sparkles className="w-4.5 h-4.5 text-white" />
           </div>
           <span className="font-bold text-foreground text-[15px] tracking-tight">
-            ViralFaceless AI
+            {t('brand.name')}
           </span>
         </div>
         {!isMobile && sidebarOpen && (
@@ -189,7 +192,7 @@ function SidebarContent({
           <>
             <Separator className="my-3 opacity-50" />
             <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-3 mb-2">
-              Admin
+              {t('nav.adminSection')}
             </p>
             <div className="space-y-1">
               {adminNavItems.map((item) => (
@@ -210,7 +213,7 @@ function SidebarContent({
         <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50">
           <div className="flex items-center gap-2">
             <Coins className="h-4 w-4 text-yellow-400" />
-            <span className="text-sm font-medium text-foreground">Credits</span>
+            <span className="text-sm font-medium text-foreground">{t('nav.credits')}</span>
           </div>
           <Badge
             variant="outline"
@@ -233,7 +236,7 @@ function SidebarContent({
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {user?.name ?? 'User'}
+              {user?.name ?? t('nav.user')}
             </p>
             <Badge
               variant="outline"
@@ -255,7 +258,7 @@ function SidebarContent({
                 <LogOut className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Sign out</TooltipContent>
+            <TooltipContent side="right">{t('nav.signOut')}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -265,6 +268,7 @@ function SidebarContent({
 
 export default function AppSidebar() {
   const { sidebarOpen, setSidebarOpen } = useStore();
+  const { t } = useI18n();
   const isMobile = useIsMobile();
 
   // Mobile sidebar - Sheet
@@ -282,7 +286,7 @@ export default function AppSidebar() {
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0 bg-card border-border/50">
           <SheetHeader className="sr-only">
-            <SheetTitle>Navigation</SheetTitle>
+            <SheetTitle>{t('nav.navigation')}</SheetTitle>
           </SheetHeader>
           <SidebarContent />
         </SheetContent>

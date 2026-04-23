@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { PLATFORMS } from '@/lib/constants';
 import type { SEOData } from '@/lib/types';
 
@@ -39,6 +40,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 export default function SEOGenerator() {
+  const { t } = useI18n();
   const {
     seoData,
     setSeoData,
@@ -94,15 +96,15 @@ export default function SEOGenerator() {
 
   const handleGenerate = async () => {
     if (!title.trim()) {
-      toast.error('Please enter a title');
+      toast.error(t('seo.noTitle'));
       return;
     }
     if (selectedPlatforms.length === 0) {
-      toast.error('Please select at least one platform');
+      toast.error(t('seo.noPlatform'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits. Please buy more credits.');
+      toast.error(t('seo.notEnoughCredits'));
       return;
     }
 
@@ -120,9 +122,9 @@ export default function SEOGenerator() {
       setEditingTitle({});
       setEditingDesc({});
       setActiveTab(selectedPlatforms[0]);
-      toast.success('SEO metadata generated!');
+      toast.success(t('seo.generated'));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to generate SEO';
+      const message = err instanceof Error ? err.message : t('seo.failed');
       toast.error(message);
     } finally {
       setSeoLoading(false);
@@ -137,11 +139,11 @@ export default function SEOGenerator() {
       return;
     }
     const words = [
-      'Analyzing keywords...',
-      'Optimizing titles...',
-      'Generating hashtags...',
-      'Crafting descriptions...',
-      'Boosting SEO score...',
+      t('seo.analyzingKeywords'),
+      t('seo.optimizingTitles'),
+      t('seo.generatingHashtags'),
+      t('seo.craftingDescs'),
+      t('seo.boostingSeo'),
     ];
     let idx = 0;
     const interval = setInterval(() => {
@@ -149,16 +151,16 @@ export default function SEOGenerator() {
       setTypingText(words[idx]);
     }, 800);
     return () => clearInterval(interval);
-  }, [seoLoading]);
+  }, [seoLoading, t]);
 
   const copyToClipboard = async (text: string, fieldId: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldId);
-      toast.success('Copied to clipboard!');
+      toast.success(t('seo.copied'));
       setTimeout(() => setCopiedField(null), 2000);
     } catch {
-      toast.error('Failed to copy');
+      toast.error(t('seo.copyFailed'));
     }
   };
 
@@ -223,7 +225,7 @@ export default function SEOGenerator() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Search className="h-10 w-10 text-muted-foreground/40 mb-3" />
           <p className="text-muted-foreground">
-            Generate SEO to see results for {PLATFORM_LABELS[platform]}
+            {t('seo.generateFirst').replace('{platform}', PLATFORM_LABELS[platform])}
           </p>
         </div>
       );
@@ -245,10 +247,10 @@ export default function SEOGenerator() {
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Type className="h-4 w-4 text-purple-400" />
-              Optimized Title
+              {t('seo.optimizedTitle')}
             </Label>
             <div className="flex items-center gap-2">
-              <CharCount text={currentTitle} limit={limits.title} label="chars" />
+              <CharCount text={currentTitle} limit={limits.title} label={t('seo.chars')} />
               <Button
                 variant="ghost"
                 size="sm"
@@ -277,10 +279,10 @@ export default function SEOGenerator() {
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
               <AlignLeft className="h-4 w-4 text-purple-400" />
-              Optimized Description
+              {t('seo.optimizedDesc')}
             </Label>
             <div className="flex items-center gap-2">
-              <CharCount text={currentDesc} limit={limits.desc} label="chars" />
+              <CharCount text={currentDesc} limit={limits.desc} label={t('seo.chars')} />
               <Button
                 variant="ghost"
                 size="sm"
@@ -310,7 +312,7 @@ export default function SEOGenerator() {
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Hash className="h-4 w-4 text-purple-400" />
-              Hashtags
+              {t('seo.hashtags')}
               <span className="text-xs text-muted-foreground font-normal">
                 ({data.hashtags.length})
               </span>
@@ -349,7 +351,7 @@ export default function SEOGenerator() {
                   setNewHashtag((prev) => ({ ...prev, [platform]: e.target.value }))
                 }
                 onKeyDown={(e) => e.key === 'Enter' && addHashtag(platform)}
-                placeholder="+ Add tag"
+                placeholder={t('seo.addTag')}
                 className="h-7 w-24 bg-transparent border-border text-xs"
               />
               <Button
@@ -371,7 +373,7 @@ export default function SEOGenerator() {
           className="w-full border-purple-500/30 hover:bg-purple-500/10 text-purple-300 hover:text-purple-200"
         >
           <Copy className="mr-2 h-4 w-4" />
-          Copy All for {PLATFORM_LABELS[platform]}
+          {t('seo.copyAll').replace('{platform}', PLATFORM_LABELS[platform])}
         </Button>
       </motion.div>
     );
@@ -389,9 +391,9 @@ export default function SEOGenerator() {
           <Search className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">SEO Generator</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('seo.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Generate optimized titles, descriptions & hashtags
+            {t('seo.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -406,11 +408,11 @@ export default function SEOGenerator() {
           <CardContent className="space-y-4 p-5">
             {/* Title */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Content Title</Label>
+              <Label className="text-sm font-medium text-foreground">{t('seo.contentTitle')}</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter your content title..."
+                placeholder={t('seo.titlePlaceholder')}
                 className="bg-background border-border text-foreground"
               />
             </div>
@@ -418,13 +420,12 @@ export default function SEOGenerator() {
             {/* Description */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">
-                Description{' '}
-                <span className="text-muted-foreground font-normal">(optional)</span>
+                {t('seo.description')}
               </Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a brief description of your content..."
+                placeholder={t('seo.descPlaceholder')}
                 rows={3}
                 className="resize-none bg-background border-border text-foreground"
               />
@@ -432,18 +433,18 @@ export default function SEOGenerator() {
 
             {/* Niche */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Niche</Label>
+              <Label className="text-sm font-medium text-foreground">{t('seo.niche')}</Label>
               <Input
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
-                placeholder="e.g. motivation, finance, technology"
+                placeholder={t('seo.nichePlaceholder')}
                 className="bg-background border-border text-foreground"
               />
             </div>
 
             {/* Platform Select */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Target Platforms</Label>
+              <Label className="text-sm font-medium text-foreground">{t('seo.targetPlatforms')}</Label>
               <div className="flex flex-wrap gap-2">
                 {PLATFORMS.map((platform) => (
                   <Badge
@@ -474,14 +475,14 @@ export default function SEOGenerator() {
               {seoLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {typingText || 'Generating...'}
+                  {typingText || t('seo.generating')}
                 </>
               ) : (
                 <>
                   <Search className="mr-2 h-4 w-4" />
-                  Generate SEO Metadata
+                  {t('seo.generate')}
                   <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                    -1 credit
+                    {t('common.credit')}
                   </span>
                 </>
               )}
@@ -536,10 +537,9 @@ export default function SEOGenerator() {
           <div className="rounded-2xl bg-muted/50 p-6 mb-4">
             <Search className="h-12 w-12 text-muted-foreground/50" />
           </div>
-          <h3 className="text-lg font-medium text-foreground">No SEO data yet</h3>
+          <h3 className="text-lg font-medium text-foreground">{t('seo.noData')}</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-sm">
-            Enter your content details above and generate optimized titles, descriptions, and
-            hashtags for each platform.
+            {t('seo.noDataDesc')}
           </p>
         </motion.div>
       )}

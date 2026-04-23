@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n';
 
 // ─── Helpers ────────────────────────────────────────────────────
 function viralScoreColor(score: number): string {
@@ -63,15 +64,6 @@ function emotionColor(emotion: string): string {
   const key = emotion.toLowerCase();
   return colors[key] || 'bg-secondary text-secondary-foreground border-border';
 }
-
-// ─── 1-Click Viral Steps ────────────────────────────────────────
-const VIRAL_STEPS = [
-  { label: 'Analyzing niche trends...', icon: '📊' },
-  { label: 'Generating viral ideas...', icon: '💡' },
-  { label: 'Selecting best idea...', icon: '⭐' },
-  { label: 'Writing script...', icon: '✍️' },
-  { label: 'Done! Content ready.', icon: '🎉' },
-];
 
 // ─── Skeleton Loader ────────────────────────────────────────────
 function IdeaSkeleton() {
@@ -104,6 +96,8 @@ function IdeaCard({
   onSelect: () => void;
   onRegenerate: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <motion.div
       layout
@@ -158,7 +152,7 @@ function IdeaCard({
             }}
           >
             <Check className="size-3.5 mr-1" />
-            Select
+            {t('ideas.selected')}
           </Button>
           <Button
             size="sm"
@@ -178,6 +172,8 @@ function IdeaCard({
 
 // ─── Main Component ─────────────────────────────────────────────
 export default function IdeaEngine() {
+  const { t } = useI18n();
+
   const {
     user,
     ideas,
@@ -203,10 +199,19 @@ export default function IdeaEngine() {
   const [viralStep, setViralStep] = useState(0);
   const [viralRunning, setViralRunning] = useState(false);
 
+  // ── Viral Steps (translated) ───────────────────────────────────
+  const viralSteps = useMemo(() => [
+    { label: t('ideas.analyzing'), icon: '📊' },
+    { label: t('ideas.generating'), icon: '💡' },
+    { label: t('ideas.selecting'), icon: '⭐' },
+    { label: t('ideas.writing'), icon: '✍️' },
+    { label: t('ideas.done'), icon: '🎉' },
+  ], [t]);
+
   // ── Generate Ideas ──────────────────────────────────────────────
   const handleGenerateIdeas = useCallback(async () => {
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits! Purchase more to continue.');
+      toast.error(t('script.notEnoughCredits'));
       return;
     }
 
@@ -221,11 +226,13 @@ export default function IdeaEngine() {
       if (data.remainingCredits !== undefined) {
         setUser({ ...user, credits: data.remainingCredits });
       }
+      const count = data.ideas?.length || ideaCount;
+      const remaining = data.remainingCredits ?? user.credits - 1;
       toast.success(
-        `Generated ${data.ideas?.length || ideaCount} ideas! Credits remaining: ${data.remainingCredits ?? user.credits - 1}`
+        t('ideas.generated').replace('{n}', String(count)).replace('{n}', String(remaining))
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate ideas');
+      toast.error(err instanceof Error ? err.message : t('ideas.failed'));
     } finally {
       setIdeasLoading(false);
     }
@@ -237,27 +244,28 @@ export default function IdeaEngine() {
     setIdeas,
     setIdeasLoading,
     setUser,
+    t,
   ]);
 
   // ── Select Idea ────────────────────────────────────────────────
   const handleSelectIdea = useCallback(
     (idea: ViralIdea) => {
       setSelectedIdea(idea);
-      toast.success('Idea selected! Go to Script Generator', {
+      toast.success(t('ideas.ideaSelected'), {
         action: {
-          label: 'Go to Scripts',
+          label: t('ideas.goToScripts'),
           onClick: () => setCurrentView('script-generator'),
         },
       });
     },
-    [setSelectedIdea, setCurrentView]
+    [setSelectedIdea, setCurrentView, t]
   );
 
   // ── Regenerate Single Idea ─────────────────────────────────────
   const handleRegenerateIdea = useCallback(
     async (index: number) => {
       if (!user || user.credits < 1) {
-        toast.error('Not enough credits to regenerate!');
+        toast.error(t('ideas.notEnoughRegenerate'));
         return;
       }
 
@@ -271,21 +279,21 @@ export default function IdeaEngine() {
           if (data.remainingCredits !== undefined) {
             setUser({ ...user, credits: data.remainingCredits });
           }
-          toast.success('Idea regenerated!');
+          toast.success(t('ideas.ideaRegenerated'));
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to regenerate');
+        toast.error(err instanceof Error ? err.message : t('ideas.regenerateFailed'));
       } finally {
         setRegeneratingId(null);
       }
     },
-    [user, ideas, currentNiche, makeMoreExtreme, setIdeas, setUser]
+    [user, ideas, currentNiche, makeMoreExtreme, setIdeas, setUser, t]
   );
 
   // ── 1-Click Viral Mode ─────────────────────────────────────────
   const handleOneClickViral = useCallback(async () => {
     if (!user || user.credits < 2) {
-      toast.error('Need at least 2 credits for 1-Click Viral Mode!');
+      toast.error(t('ideas.needCredits'));
       return;
     }
 
@@ -328,9 +336,9 @@ export default function IdeaEngine() {
 
       // Done
       setViralStep(4);
-      toast.success('🚀 Viral content ready! Script generated.');
+      toast.success(t('ideas.viralReady'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '1-Click Viral Mode failed');
+      toast.error(err instanceof Error ? err.message : t('ideas.oneClickFailed'));
       setScriptLoading(false);
     } finally {
       setViralRunning(false);
@@ -343,6 +351,7 @@ export default function IdeaEngine() {
     setCurrentScript,
     setScriptLoading,
     setUser,
+    t,
   ]);
 
   return (
@@ -351,18 +360,17 @@ export default function IdeaEngine() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Sparkles className="size-6 text-purple-400" />
-          Viral Idea Engine
+          {t('ideas.title')}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Generate viral content ideas powered by AI. Select a niche and let the
-          algorithm find winning angles.
+          {t('ideas.subtitle')}
         </p>
       </div>
 
       {/* ── Niche Selector ─────────────────────────────────────── */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Select Your Niche
+          {t('ideas.selectNiche')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {NICHES.map((niche) => {
@@ -412,14 +420,14 @@ export default function IdeaEngine() {
           ) : (
             <Sparkles className="size-5 mr-2" />
           )}
-          Generate Ideas
+          {t('ideas.generate')}
           {!ideasLoading && user && (
-            <span className="ml-2 text-xs opacity-70">(-1 credit)</span>
+            <span className="ml-2 text-xs opacity-70">{t('common.credit')}</span>
           )}
         </Button>
 
         <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground">Count:</Label>
+          <Label className="text-sm text-muted-foreground">{t('ideas.count')}</Label>
           <Select value={String(ideaCount)} onValueChange={(v) => setIdeaCount(Number(v))}>
             <SelectTrigger className="w-20">
               <SelectValue />
@@ -439,13 +447,13 @@ export default function IdeaEngine() {
             onCheckedChange={setMakeMoreExtreme}
           />
           <Label htmlFor="extreme-toggle" className="text-sm cursor-pointer">
-            🔥 Make More Extreme
+            🔥 {t('ideas.makeExtreme')}
           </Label>
         </div>
 
         {user && (
           <span className="text-xs text-muted-foreground ml-auto">
-            Credits: <span className="text-foreground font-semibold">{user.credits}</span>
+            {t('ideas.credits')} <span className="text-foreground font-semibold">{user.credits}</span>
           </span>
         )}
       </div>
@@ -479,10 +487,10 @@ export default function IdeaEngine() {
         >
           <div className="text-5xl mb-4">💡</div>
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            No ideas yet
+            {t('ideas.noIdeas')}
           </h3>
           <p className="text-muted-foreground text-sm">
-            Select a niche and click &quot;Generate Ideas&quot; to get started
+            {t('ideas.noIdeasDesc')}
           </p>
         </motion.div>
       )}
@@ -500,8 +508,8 @@ export default function IdeaEngine() {
           size="lg"
         >
           <Zap className="size-5 mr-2" />
-          1-Click Viral Mode
-          <span className="ml-2 text-xs opacity-70">(-2 credits)</span>
+          {t('ideas.oneClickViral')}
+          <span className="ml-2 text-xs opacity-70">{t('common.credits2')}</span>
         </Button>
       </motion.div>
 
@@ -511,15 +519,15 @@ export default function IdeaEngine() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="size-5 text-amber-400" />
-              1-Click Viral Mode
+              {t('ideas.oneClickViral')}
             </DialogTitle>
             <DialogDescription>
-              AI is creating viral content for you automatically
+              {t('ideas.aiCreating')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-4">
-            {VIRAL_STEPS.map((step, index) => (
+            {viralSteps.map((step, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0.3, x: -10 }}

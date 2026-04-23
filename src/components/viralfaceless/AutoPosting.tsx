@@ -49,23 +49,12 @@ import {
 import { useStore } from '@/lib/store';
 import { PLATFORMS } from '@/lib/constants';
 import type { ScheduledPost } from '@/lib/types';
+import { useI18n } from '@/lib/i18n';
 
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   youtube: <Youtube className="h-5 w-5" />,
   tiktok: <Music className="h-5 w-5" />,
   instagram: <Instagram className="h-5 w-5" />,
-};
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
-  scheduled: {
-    label: 'Scheduled',
-    color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
-  },
-  published: {
-    label: 'Published',
-    color: 'bg-green-500/15 text-green-400 border-green-500/20',
-  },
 };
 
 const MOCK_SCHEDULED_POSTS: ScheduledPost[] = [
@@ -106,7 +95,20 @@ const MOCK_SCHEDULED_POSTS: ScheduledPost[] = [
 ];
 
 export default function AutoPosting() {
+  const { t } = useI18n();
   const { scheduledPosts, setScheduledPosts } = useStore();
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    draft: { label: t('posting.status.draft'), color: 'bg-gray-500/15 text-gray-400 border-gray-500/20' },
+    scheduled: {
+      label: t('posting.status.scheduled'),
+      color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
+    },
+    published: {
+      label: t('posting.status.published'),
+      color: 'bg-green-500/15 text-green-400 border-green-500/20',
+    },
+  };
 
   // Platform connections
   const [connectedPlatforms, setConnectedPlatforms] = useState<Record<string, boolean>>({
@@ -131,10 +133,11 @@ export default function AutoPosting() {
   const toggleConnection = (platform: string) => {
     setConnectedPlatforms((prev) => {
       const newVal = !prev[platform];
+      const platformLabel = PLATFORMS.find((p) => p.value === platform)?.label || '';
       toast.success(
         newVal
-          ? `${PLATFORMS.find((p) => p.value === platform)?.label} connected!`
-          : `${PLATFORMS.find((p) => p.value === platform)?.label} disconnected`
+          ? t('posting.platformConnected').replace('{platform}', platformLabel)
+          : t('posting.platformDisconnected').replace('{platform}', platformLabel)
       );
       return { ...prev, [platform]: newVal };
     });
@@ -142,15 +145,15 @@ export default function AutoPosting() {
 
   const handlePostNow = async () => {
     if (!postPlatform) {
-      toast.error('Please select a platform');
+      toast.error(t('posting.error.noPlatform'));
       return;
     }
     if (!postTitle.trim()) {
-      toast.error('Please enter a title');
+      toast.error(t('posting.error.noTitle'));
       return;
     }
     if (!connectedPlatforms[postPlatform]) {
-      toast.error(`Please connect ${PLATFORMS.find((p) => p.value === postPlatform)?.label} first`);
+      toast.error(t('posting.error.connectFirst').replace('{platform}', PLATFORMS.find((p) => p.value === postPlatform)?.label || ''));
       return;
     }
 
@@ -168,7 +171,7 @@ export default function AutoPosting() {
 
     setPosts((prev) => [newPost, ...prev]);
     setScheduledPosts(posts);
-    toast.success('Post published successfully!');
+    toast.success(t('posting.error.published'));
 
     // Reset form
     setPostPlatform('');
@@ -182,15 +185,15 @@ export default function AutoPosting() {
 
   const handleSchedule = async () => {
     if (!postPlatform || !postTitle.trim()) {
-      toast.error('Please fill platform and title');
+      toast.error(t('posting.error.fillFields'));
       return;
     }
     if (!scheduleDate || !scheduleTime) {
-      toast.error('Please select a date and time');
+      toast.error(t('posting.error.noDatetime'));
       return;
     }
     if (!connectedPlatforms[postPlatform]) {
-      toast.error(`Please connect ${PLATFORMS.find((p) => p.value === postPlatform)?.label} first`);
+      toast.error(t('posting.error.connectFirst').replace('{platform}', PLATFORMS.find((p) => p.value === postPlatform)?.label || ''));
       return;
     }
 
@@ -207,7 +210,7 @@ export default function AutoPosting() {
 
     setPosts((prev) => [newPost, ...prev]);
     setScheduledPosts(posts);
-    toast.success('Post scheduled successfully!');
+    toast.success(t('posting.error.scheduled'));
 
     setScheduleDate('');
     setScheduleTime('');
@@ -216,7 +219,7 @@ export default function AutoPosting() {
 
   const handleDelete = (id: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
-    toast.success('Post deleted');
+    toast.success(t('posting.error.deleted'));
   };
 
   const handlePublishNow = (id: string) => {
@@ -227,7 +230,7 @@ export default function AutoPosting() {
           : p
       )
     );
-    toast.success('Post published now!');
+    toast.success(t('posting.error.publishedNow'));
   };
 
   return (
@@ -242,9 +245,9 @@ export default function AutoPosting() {
           <Send className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Auto Posting & Scheduling</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('posting.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Connect platforms, create posts, and schedule content
+            {t('posting.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -256,7 +259,7 @@ export default function AutoPosting() {
         transition={{ delay: 0.05 }}
       >
         <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-          Platform Connections
+          {t('posting.platformConnections')}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {PLATFORMS.map((platform) => {
@@ -284,7 +287,7 @@ export default function AutoPosting() {
                         {platform.label}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {isConnected ? 'Connected' : 'Not connected'}
+                        {isConnected ? t('posting.connected') : t('posting.notConnected')}
                       </p>
                     </div>
                   </div>
@@ -298,7 +301,7 @@ export default function AutoPosting() {
                       className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 text-xs"
                     >
                       <Link2 className="mr-1 h-3 w-3" />
-                      Connect
+                      {t('posting.connect')}
                     </Button>
                   )}
                 </CardContent>
@@ -318,17 +321,17 @@ export default function AutoPosting() {
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Pencil className="h-4 w-4 text-purple-400" />
-              Create Post
+              {t('posting.createPost')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Platform */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Platform</Label>
+                <Label className="text-sm font-medium text-foreground">{t('posting.platform')}</Label>
                 <Select value={postPlatform} onValueChange={setPostPlatform}>
                   <SelectTrigger className="bg-background border-border">
-                    <SelectValue placeholder="Select platform" />
+                    <SelectValue placeholder={t('posting.selectPlatform')} />
                   </SelectTrigger>
                   <SelectContent>
                     {PLATFORMS.map((p) => (
@@ -342,11 +345,11 @@ export default function AutoPosting() {
 
               {/* Title */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Title</Label>
+                <Label className="text-sm font-medium text-foreground">{t('posting.postTitle')}</Label>
                 <Input
                   value={postTitle}
                   onChange={(e) => setPostTitle(e.target.value)}
-                  placeholder="Post title..."
+                  placeholder={t('posting.postTitlePlaceholder')}
                   className="bg-background border-border text-foreground"
                 />
               </div>
@@ -354,11 +357,11 @@ export default function AutoPosting() {
 
             {/* Description */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Description</Label>
+              <Label className="text-sm font-medium text-foreground">{t('posting.postDesc')}</Label>
               <Textarea
                 value={postDescription}
                 onChange={(e) => setPostDescription(e.target.value)}
-                placeholder="Post description..."
+                placeholder={t('posting.postDescPlaceholder')}
                 rows={3}
                 className="resize-none bg-background border-border text-foreground"
               />
@@ -367,18 +370,18 @@ export default function AutoPosting() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Tags */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Tags / Hashtags</Label>
+                <Label className="text-sm font-medium text-foreground">{t('posting.tags')}</Label>
                 <Input
                   value={postTags}
                   onChange={(e) => setPostTags(e.target.value)}
-                  placeholder="#motivation #viral"
+                  placeholder={t('posting.tagsPlaceholder')}
                   className="bg-background border-border text-foreground"
                 />
               </div>
 
               {/* Video URL */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Video URL</Label>
+                <Label className="text-sm font-medium text-foreground">{t('posting.videoUrl')}</Label>
                 <Input
                   value={postVideoUrl}
                   onChange={(e) => setPostVideoUrl(e.target.value)}
@@ -393,7 +396,7 @@ export default function AutoPosting() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
                   <ImageIcon className="h-3.5 w-3.5" />
-                  Thumbnail URL
+                  {t('posting.thumbnailUrl')}
                 </Label>
                 <Input
                   value={postThumbnailUrl}
@@ -407,7 +410,7 @@ export default function AutoPosting() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
                   <CalendarDays className="h-3.5 w-3.5" />
-                  Schedule (optional)
+                  {t('posting.schedule')}
                 </Label>
                 <div className="flex gap-2">
                   <Input
@@ -438,7 +441,7 @@ export default function AutoPosting() {
                 ) : (
                   <Play className="mr-2 h-4 w-4" />
                 )}
-                Post Now
+                {t('posting.postNow')}
               </Button>
               <Button
                 onClick={handleSchedule}
@@ -452,7 +455,7 @@ export default function AutoPosting() {
                 ) : (
                   <Clock className="mr-2 h-4 w-4" />
                 )}
-                Schedule
+                {t('posting.scheduleBtn')}
               </Button>
             </div>
           </CardContent>
@@ -469,7 +472,7 @@ export default function AutoPosting() {
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Clock className="h-4 w-4 text-blue-400" />
-              Scheduled Posts
+              {t('posting.scheduledPosts')}
               <span className="text-sm font-normal text-muted-foreground">
                 ({posts.length})
               </span>
@@ -480,11 +483,11 @@ export default function AutoPosting() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Platform</TableHead>
-                    <TableHead className="text-muted-foreground">Title</TableHead>
-                    <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Scheduled Date</TableHead>
-                    <TableHead className="text-muted-foreground text-right">Actions</TableHead>
+                    <TableHead className="text-muted-foreground">{t('posting.tablePlatform')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('posting.tableTitle')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('posting.tableStatus')}</TableHead>
+                    <TableHead className="text-muted-foreground">{t('posting.tableDate')}</TableHead>
+                    <TableHead className="text-muted-foreground text-right">{t('posting.tableActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -546,7 +549,7 @@ export default function AutoPosting() {
                                 className="h-7 px-2 text-green-400 hover:text-green-300 hover:bg-green-500/10"
                               >
                                 <Play className="h-3 w-3 mr-1" />
-                                Publish
+                                {t('posting.publish')}
                               </Button>
                             )}
                             <Button
@@ -569,7 +572,7 @@ export default function AutoPosting() {
             {posts.length === 0 && (
               <div className="flex flex-col items-center py-12 text-center">
                 <Send className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground">No posts yet. Create your first post above!</p>
+                <p className="text-muted-foreground">{t('posting.noPosts')}</p>
               </div>
             )}
           </CardContent>

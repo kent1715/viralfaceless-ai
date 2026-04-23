@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,32 +30,33 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 
-const benefits = [
-  {
-    icon: Coins,
-    title: '5 Free Credits',
-    description: 'Start creating content right away',
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-400/10',
-  },
-  {
-    icon: Cpu,
-    title: 'AI-Powered Content',
-    description: 'Generate scripts, voice, and videos',
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-  },
-  {
-    icon: Zap,
-    title: '1-Click Viral Mode',
-    description: 'From idea to viral content in minutes',
-    color: 'text-purple-400',
-    bg: 'bg-purple-400/10',
-  },
-];
-
 export default function RegisterForm() {
   const { setUser, setToken, setCurrentView } = useStore();
+  const { t } = useI18n();
+
+  const benefits = [
+    {
+      icon: Coins,
+      title: t('register.benefit1.title'),
+      description: t('register.benefit1.desc'),
+      color: 'text-yellow-400',
+      bg: 'bg-yellow-400/10',
+    },
+    {
+      icon: Cpu,
+      title: t('register.benefit2.title'),
+      description: t('register.benefit2.desc'),
+      color: 'text-blue-400',
+      bg: 'bg-blue-400/10',
+    },
+    {
+      icon: Zap,
+      title: t('register.benefit3.title'),
+      description: t('register.benefit3.desc'),
+      color: 'text-purple-400',
+      bg: 'bg-purple-400/10',
+    },
+  ];
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -65,27 +67,27 @@ export default function RegisterForm() {
 
   const validate = (): boolean => {
     if (!name.trim()) {
-      setError('Name is required');
+      setError(t('register.error.nameRequired'));
       return false;
     }
     if (!email.trim()) {
-      setError('Email is required');
+      setError(t('register.error.emailRequired'));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('register.error.emailInvalid'));
       return false;
     }
     if (!password.trim()) {
-      setError('Password is required');
+      setError(t('register.error.passwordRequired'));
       return false;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('register.error.passwordMin'));
       return false;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('register.error.passwordMismatch'));
       return false;
     }
     setError('');
@@ -106,7 +108,7 @@ export default function RegisterForm() {
       setCurrentView('dashboard');
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Registration failed. Please try again.';
+        err instanceof Error ? err.message : t('register.error.failed');
       setError(message);
     } finally {
       setLoading(false);
@@ -154,17 +156,16 @@ export default function RegisterForm() {
                 ViralFaceless AI
               </h1>
               <p className="text-muted-foreground text-sm">
-                Create viral faceless content with AI
+                {t('brand.tagline')}
               </p>
             </div>
           </div>
 
           <h2 className="text-3xl font-bold text-foreground">
-            Start creating viral content today
+            {t('register.hero.title')}
           </h2>
           <p className="text-muted-foreground text-lg">
-            Join thousands of creators who use AI to generate faceless videos,
-            scripts, and thumbnails that go viral.
+            {t('register.hero.desc')}
           </p>
 
           <div className="space-y-4 mt-4">
@@ -210,7 +211,7 @@ export default function RegisterForm() {
               ViralFaceless AI
             </h1>
             <p className="text-muted-foreground mt-1">
-              Create viral faceless content with AI
+              {t('brand.tagline')}
             </p>
           </motion.div>
 
@@ -235,9 +236,9 @@ export default function RegisterForm() {
           {/* Register card */}
           <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-2xl shadow-black/20">
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-xl">Create your account</CardTitle>
+              <CardTitle className="text-xl">{t('register.title')}</CardTitle>
               <CardDescription>
-                Get started with 5 free credits
+                {t('register.subtitle')}
               </CardDescription>
             </CardHeader>
 
@@ -256,13 +257,13 @@ export default function RegisterForm() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">{t('register.name')}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="name"
                       type="text"
-                      placeholder="John Doe"
+                      placeholder={t('register.namePlaceholder')}
                       className="pl-10 bg-background/50"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -272,13 +273,13 @@ export default function RegisterForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
+                  <Label htmlFor="reg-email">{t('register.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="reg-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t('register.emailPlaceholder')}
                       className="pl-10 bg-background/50"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -288,13 +289,13 @@ export default function RegisterForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
+                  <Label htmlFor="reg-password">{t('register.password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="reg-password"
                       type="password"
-                      placeholder="Min. 6 characters"
+                      placeholder={t('register.passwordPlaceholder')}
                       className="pl-10 bg-background/50"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -304,13 +305,13 @@ export default function RegisterForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Label htmlFor="confirm-password">{t('register.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirm-password"
                       type="password"
-                      placeholder="Repeat your password"
+                      placeholder={t('register.confirmPasswordPlaceholder')}
                       className="pl-10 bg-background/50"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
@@ -329,11 +330,11 @@ export default function RegisterForm() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
+                      {t('register.submitting')}
                     </>
                   ) : (
                     <>
-                      Create Account
+                      {t('register.submit')}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -342,13 +343,13 @@ export default function RegisterForm() {
                 <Separator />
 
                 <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
+                  {t('register.hasAccount')}{' '}
                   <button
                     type="button"
                     onClick={() => setCurrentView('login')}
                     className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                   >
-                    Sign in
+                    {t('register.signIn')}
                   </button>
                 </p>
               </CardFooter>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useI18n } from '@/lib/i18n';
 
 // ─── Typing Animation Hook ──────────────────────────────────────
 function useTypingEffect(text: string, speed: number = 15) {
@@ -81,14 +82,15 @@ function useTypingEffect(text: string, speed: number = 15) {
 // ─── Copy Button ────────────────────────────────────────────────
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
-      toast.success(`${label || 'Text'} copied to clipboard!`);
+      toast.success(t('script.copied').replace('{label}', label || 'Text'));
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [text, label]);
+  }, [text, label, t]);
 
   return (
     <Button
@@ -122,6 +124,7 @@ function ScriptSection({
   isTyping: boolean;
   color?: string;
 }) {
+  const { t } = useI18n();
   const colorMap: Record<string, string> = {
     purple: 'border-purple-500/30 bg-purple-500/5',
     amber: 'border-amber-500/30 bg-amber-500/5',
@@ -162,7 +165,7 @@ function ScriptSection({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            Not generated yet
+            {t('script.notGenerated')}
           </p>
         )}
       </CardContent>
@@ -217,6 +220,8 @@ function OptionCard({
 
 // ─── Main Component ─────────────────────────────────────────────
 export default function ScriptGenerator() {
+  const { t } = useI18n();
+
   const {
     user,
     selectedIdea,
@@ -234,6 +239,19 @@ export default function ScriptGenerator() {
   const [editedScript, setEditedScript] = useState('');
   const [showScript, setShowScript] = useState(false);
 
+  // ── Translated styles & tones ─────────────────────────────────
+  const scriptStyles = useMemo(() => SCRIPT_STYLES.map(s => ({
+    ...s,
+    label: t(`script.style.${s.value}`),
+    description: t(`script.style.${s.value}Desc`),
+  })), [t]);
+
+  const scriptTones = useMemo(() => SCRIPT_TONES.map(tn => ({
+    ...tn,
+    label: t(`script.tone.${tn.value}`),
+    description: t(`script.tone.${tn.value}Desc`),
+  })), [t]);
+
   // Typing effects for each section
   const hookTyping = useTypingEffect(currentScript?.hook || '', 20);
   const contentTyping = useTypingEffect(currentScript?.mainContent || '', 10);
@@ -250,11 +268,11 @@ export default function ScriptGenerator() {
   // ── Generate Script ────────────────────────────────────────────
   const handleGenerateScript = useCallback(async () => {
     if (!selectedIdea) {
-      toast.error('Please select an idea from the Idea Engine first');
+      toast.error(t('script.needIdea'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits! Purchase more to continue.');
+      toast.error(t('script.notEnoughCredits'));
       return;
     }
 
@@ -275,18 +293,18 @@ export default function ScriptGenerator() {
       if (data.remainingCredits !== undefined) {
         setUser({ ...user, credits: data.remainingCredits });
       }
-      toast.success('Script generated successfully!');
+      toast.success(t('script.generated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate script');
+      toast.error(err instanceof Error ? err.message : t('script.failed'));
     } finally {
       setScriptLoading(false);
     }
-  }, [selectedIdea, user, style, tone, setCurrentScript, setScriptLoading, setUser]);
+  }, [selectedIdea, user, style, tone, setCurrentScript, setScriptLoading, setUser, t]);
 
   // ── Hook Rewrite ───────────────────────────────────────────────
   const handleHookRewrite = useCallback(async () => {
     if (!currentScript || !user || user.credits < 1) {
-      toast.error('Not enough credits to rewrite hook!');
+      toast.error(t('script.notEnoughRewrite'));
       return;
     }
 
@@ -309,13 +327,13 @@ export default function ScriptGenerator() {
       if (data.remainingCredits !== undefined) {
         setUser({ ...user, credits: data.remainingCredits });
       }
-      toast.success('Hook rewritten to be more viral!');
+      toast.success(t('script.rewritten'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to rewrite hook');
+      toast.error(err instanceof Error ? err.message : t('script.rewriteFailed'));
     } finally {
       setScriptLoading(false);
     }
-  }, [currentScript, user, setCurrentScript, setScriptLoading, setUser]);
+  }, [currentScript, user, setCurrentScript, setScriptLoading, setUser, t]);
 
   // ── No idea selected state ─────────────────────────────────────
   if (!selectedIdea) {
@@ -324,7 +342,7 @@ export default function ScriptGenerator() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FileText className="size-6 text-purple-400" />
-            Script Generator
+            {t('script.title')}
           </h1>
         </div>
 
@@ -336,17 +354,16 @@ export default function ScriptGenerator() {
           <div className="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
             <Sparkles className="size-10 text-purple-400" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">No idea selected</h3>
+          <h3 className="text-xl font-semibold mb-2">{t('script.noIdea')}</h3>
           <p className="text-muted-foreground max-w-md mb-6">
-            Please select an idea from the Idea Engine first. The script generator
-            will craft a viral script based on your chosen idea.
+            {t('script.noIdeaDesc')}
           </p>
           <Button
             onClick={() => setCurrentView('idea-engine')}
             className="bg-gradient-to-r from-purple-600 to-purple-500 text-white"
           >
             <ArrowLeft className="size-4 mr-2" />
-            Go to Idea Engine
+            {t('script.goToIdeas')}
           </Button>
         </motion.div>
       </div>
@@ -359,12 +376,12 @@ export default function ScriptGenerator() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <FileText className="size-6 text-purple-400" />
-          Script Generator
+          {t('script.title')}
         </h1>
         <Card className="mt-3 border-purple-500/20 bg-purple-500/5">
           <CardContent className="py-3">
             <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider mb-1">
-              Selected Idea
+              {t('script.selectedIdea')}
             </p>
             <p className="font-semibold text-foreground">{selectedIdea.title}</p>
             <p className="text-sm text-muted-foreground italic flex items-start gap-1.5 mt-1">
@@ -378,21 +395,21 @@ export default function ScriptGenerator() {
       {/* ── Configuration Panel ───────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Configuration</CardTitle>
-          <CardDescription>Customize your script style and tone</CardDescription>
+          <CardTitle className="text-base">{t('script.configuration')}</CardTitle>
+          <CardDescription>{t('script.configDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Script Style */}
           <div>
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              Script Style
+              {t('script.style')}
             </Label>
             <RadioGroup
               value={style}
               onValueChange={(v) => setStyle(v as ScriptStyle)}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             >
-              {SCRIPT_STYLES.map((s) => (
+              {scriptStyles.map((s) => (
                 <OptionCard
                   key={s.value}
                   value={s.value}
@@ -419,27 +436,27 @@ export default function ScriptGenerator() {
           {/* Script Tone */}
           <div>
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              Script Tone
+              {t('script.tone')}
             </Label>
             <RadioGroup
               value={tone}
               onValueChange={(v) => setTone(v as ScriptTone)}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3"
             >
-              {SCRIPT_TONES.map((t) => (
+              {scriptTones.map((tn) => (
                 <OptionCard
-                  key={t.value}
-                  value={t.value}
+                  key={tn.value}
+                  value={tn.value}
                   currentValue={tone}
                   onChange={(v) => setTone(v as ScriptTone)}
-                  label={t.label}
-                  description={t.description}
+                  label={tn.label}
+                  description={tn.description}
                   icon={
-                    t.value === 'serious'
+                    tn.value === 'serious'
                       ? '😐'
-                      : t.value === 'funny'
+                      : tn.value === 'funny'
                         ? '😂'
-                        : t.value === 'dark'
+                        : tn.value === 'dark'
                           ? '🌑'
                           : '⚡'
                   }
@@ -454,7 +471,7 @@ export default function ScriptGenerator() {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                Target Duration
+                {t('script.duration')}
               </Label>
               <Select value={duration} onValueChange={setDuration}>
                 <SelectTrigger className="w-32">
@@ -482,9 +499,9 @@ export default function ScriptGenerator() {
         ) : (
           <FileText className="size-5 mr-2" />
         )}
-        Generate Script
+        {t('script.generate')}
         {!scriptLoading && user && (
-          <span className="ml-2 text-xs opacity-70">(-1 credit)</span>
+          <span className="ml-2 text-xs opacity-70">{t('common.credit')}</span>
         )}
       </Button>
 
@@ -501,7 +518,7 @@ export default function ScriptGenerator() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Script Sections
+                  {t('script.sections')}
                 </h2>
                 <Button
                   size="sm"
@@ -511,7 +528,7 @@ export default function ScriptGenerator() {
                   className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
                 >
                   <Zap className="size-3.5 mr-1" />
-                  Hook Rewrite
+                  {t('script.hookRewrite')}
                   {!scriptLoading && user && (
                     <span className="ml-1 text-xs opacity-60">(-1)</span>
                   )}
@@ -520,7 +537,7 @@ export default function ScriptGenerator() {
 
               <div className="space-y-3">
                 <ScriptSection
-                  title="Hook"
+                  title={t('script.hook')}
                   icon={Zap}
                   content={currentScript.hook || ''}
                   displayContent={hookTyping.displayText}
@@ -528,7 +545,7 @@ export default function ScriptGenerator() {
                   color="amber"
                 />
                 <ScriptSection
-                  title="Main Content"
+                  title={t('script.mainContent')}
                   icon={Sparkles}
                   content={currentScript.mainContent || ''}
                   displayContent={contentTyping.displayText}
@@ -536,7 +553,7 @@ export default function ScriptGenerator() {
                   color="purple"
                 />
                 <ScriptSection
-                  title="Call to Action"
+                  title={t('script.cta')}
                   icon={Volume2}
                   content={currentScript.cta || ''}
                   displayContent={ctaTyping.displayText}
@@ -552,16 +569,16 @@ export default function ScriptGenerator() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Full Script
+                  {t('script.fullScript')}
                 </Label>
-                <CopyButton text={editedScript} label="Full script" />
+                <CopyButton text={editedScript} label={t('script.fullScript')} />
               </div>
               <Textarea
                 value={editedScript}
                 onChange={(e) => setEditedScript(e.target.value)}
                 rows={10}
                 className="bg-background border-border font-mono text-sm resize-y"
-                placeholder="Your script will appear here..."
+                placeholder={t('script.placeholder')}
               />
             </div>
 
@@ -574,14 +591,14 @@ export default function ScriptGenerator() {
                 className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 text-white"
               >
                 <Mic className="size-4 mr-2" />
-                Generate Voice
+                {t('script.generateVoice')}
               </Button>
               <Button
                 onClick={() => setCurrentView('video-generator')}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white"
               >
                 <Film className="size-4 mr-2" />
-                Create Video
+                {t('script.createVideo')}
               </Button>
             </div>
           </motion.div>
@@ -596,7 +613,7 @@ export default function ScriptGenerator() {
           className="text-center py-12"
         >
           <Loader2 className="size-8 text-purple-400 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">AI is crafting your script...</p>
+          <p className="text-muted-foreground">{t('script.generating')}</p>
           <div className="flex justify-center gap-1 mt-4">
             {[0, 1, 2].map((i) => (
               <motion.div

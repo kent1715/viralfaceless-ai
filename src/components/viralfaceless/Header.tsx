@@ -20,8 +20,10 @@ import {
   Shield,
   Sparkles,
   CreditCard,
+  Globe,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useI18n, type Language } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -37,22 +39,22 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ViewName } from '@/lib/types';
 
-const viewLabels: Record<ViewName, string> = {
-  login: 'Sign In',
-  register: 'Create Account',
-  dashboard: 'Dashboard',
-  'idea-engine': 'Viral Ideas',
-  'script-generator': 'Script Generator',
-  'tts-engine': 'Text to Speech',
-  'video-generator': 'Video Generator',
-  'auto-clipper': 'Auto Clipper',
-  'thumbnail-generator': 'Thumbnail Generator',
-  'seo-generator': 'SEO Generator',
-  'auto-posting': 'Auto Posting',
-  credits: 'Credits',
-  admin: 'Admin Panel',
-  settings: 'Settings',
-  'project-history': 'Project History',
+const viewLabelKeys: Record<ViewName, string> = {
+  login: 'header.signIn',
+  register: 'header.createAccount',
+  dashboard: 'nav.dashboard',
+  'idea-engine': 'nav.ideas',
+  'script-generator': 'nav.scripts',
+  'tts-engine': 'nav.tts',
+  'video-generator': 'nav.videos',
+  'auto-clipper': 'nav.clipper',
+  'thumbnail-generator': 'nav.thumbnail',
+  'seo-generator': 'nav.seo',
+  'auto-posting': 'nav.posting',
+  credits: 'nav.credits',
+  admin: 'nav.admin',
+  settings: 'nav.settings',
+  'project-history': 'nav.projectHistory',
 };
 
 const viewIcons: Partial<Record<ViewName, React.ElementType>> = {
@@ -80,9 +82,10 @@ export default function Header() {
     logout,
     setCurrentView,
   } = useStore();
+  const { lang, setLang, t } = useI18n();
   const isMobile = useIsMobile();
 
-  const pageTitle = viewLabels[currentView] ?? 'Dashboard';
+  const pageTitle = t(viewLabelKeys[currentView] ?? 'nav.dashboard');
   const PageIcon = viewIcons[currentView] ?? LayoutDashboard;
   const pageHasIcon = currentView !== 'login' && currentView !== 'register';
 
@@ -168,6 +171,24 @@ export default function Header() {
 
           <Separator orientation="vertical" className="h-6 mx-1" />
 
+          {/* Language switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Globe className="size-4" />
+                <span className="text-[10px] font-bold ml-0.5">{lang === 'en' ? 'EN' : 'ID'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setLang('en')} className={lang === 'en' ? 'bg-accent' : ''}>
+                🇬🇧 English
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLang('id')} className={lang === 'id' ? 'bg-accent' : ''}>
+                🇮🇩 Bahasa Indonesia
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -181,7 +202,7 @@ export default function Header() {
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden sm:block text-sm font-medium text-foreground max-w-[120px] truncate">
-                  {user?.name ?? 'User'}
+                  {user?.name ?? t('nav.user')}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -192,7 +213,7 @@ export default function Header() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-medium text-foreground">
-                    {user?.name ?? 'User'}
+                    {user?.name ?? t('nav.user')}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {user?.email ?? ''}
@@ -207,7 +228,7 @@ export default function Header() {
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {(user?.plan ?? 'free').toUpperCase()} Plan
+                    {(user?.plan ?? 'free').toUpperCase()} {t('header.plan')}
                   </Badge>
                 </div>
               </DropdownMenuLabel>
@@ -219,7 +240,7 @@ export default function Header() {
                 className="text-muted-foreground focus:text-foreground cursor-pointer"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
+                {t('nav.dashboard')}
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -227,7 +248,7 @@ export default function Header() {
                 className="text-muted-foreground focus:text-foreground cursor-pointer"
               >
                 <Coins className="mr-2 h-4 w-4" />
-                Buy Credits
+                {t('nav.buyCredits')}
               </DropdownMenuItem>
 
               {user?.role === 'admin' && (
@@ -236,7 +257,7 @@ export default function Header() {
                   className="text-muted-foreground focus:text-foreground cursor-pointer"
                 >
                   <Shield className="mr-2 h-4 w-4" />
-                  Admin Panel
+                  {t('nav.admin')}
                 </DropdownMenuItem>
               )}
 
@@ -247,7 +268,7 @@ export default function Header() {
                 className="text-red-400 focus:text-red-300 focus:bg-red-500/10 cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign out
+                {t('nav.signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

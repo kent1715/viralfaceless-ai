@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -53,52 +54,53 @@ const trendingNiches = [
   { niche: 'Health', trend: 'down', change: '-3%', score: 68 },
 ];
 
-// ─── Quick Actions ─────────────────────────────────────────────────
-const quickActions: {
-  label: string;
-  description: string;
-  icon: React.ElementType;
-  view: ViewName;
-  color: string;
-  bg: string;
-}[] = [
-  {
-    label: 'Generate Ideas',
-    description: 'AI-powered viral content ideas',
-    icon: Lightbulb,
-    view: 'idea-engine',
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-400/10',
-  },
-  {
-    label: 'Create Script',
-    description: 'Write engaging scripts',
-    icon: FileEdit,
-    view: 'script-generator',
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-  },
-  {
-    label: 'Generate Voice',
-    description: 'Text-to-speech narration',
-    icon: Mic,
-    view: 'tts-engine',
-    color: 'text-green-400',
-    bg: 'bg-green-400/10',
-  },
-  {
-    label: 'Create Video',
-    description: 'Full video production plan',
-    icon: Video,
-    view: 'video-generator',
-    color: 'text-purple-400',
-    bg: 'bg-purple-400/10',
-  },
-];
-
 // ─── Component ──────────────────────────────────────────────────────
 export default function Dashboard() {
   const { user, projects, setCurrentView, setSidebarOpen } = useStore();
+  const { t } = useI18n();
+
+  // ─── Quick Actions ───────────────────────────────────────────────
+  const quickActions: {
+    label: string;
+    description: string;
+    icon: React.ElementType;
+    view: ViewName;
+    color: string;
+    bg: string;
+  }[] = [
+    {
+      label: t('dashboard.generateIdeas'),
+      description: t('dashboard.generateIdeasDesc'),
+      icon: Lightbulb,
+      view: 'idea-engine',
+      color: 'text-yellow-400',
+      bg: 'bg-yellow-400/10',
+    },
+    {
+      label: t('dashboard.createScript'),
+      description: t('dashboard.createScriptDesc'),
+      icon: FileEdit,
+      view: 'script-generator',
+      color: 'text-blue-400',
+      bg: 'bg-blue-400/10',
+    },
+    {
+      label: t('dashboard.generateVoice'),
+      description: t('dashboard.generateVoiceDesc'),
+      icon: Mic,
+      view: 'tts-engine',
+      color: 'text-green-400',
+      bg: 'bg-green-400/10',
+    },
+    {
+      label: t('dashboard.createVideo'),
+      description: t('dashboard.createVideoDesc'),
+      icon: Video,
+      view: 'video-generator',
+      color: 'text-purple-400',
+      bg: 'bg-purple-400/10',
+    },
+  ];
 
   const contentGenerated = projects.reduce(
     (sum, p) => sum + (p.creditsUsed || 0),
@@ -107,7 +109,7 @@ export default function Dashboard() {
 
   const stats = [
     {
-      label: 'Total Credits',
+      label: t('dashboard.totalCredits'),
       value: user?.credits ?? 0,
       icon: Coins,
       color: 'text-yellow-400',
@@ -115,7 +117,7 @@ export default function Dashboard() {
       borderColor: 'border-yellow-500/20',
     },
     {
-      label: 'Projects Created',
+      label: t('dashboard.projectsCreated'),
       value: projects.length,
       icon: Folder,
       color: 'text-blue-400',
@@ -123,7 +125,7 @@ export default function Dashboard() {
       borderColor: 'border-blue-500/20',
     },
     {
-      label: 'Content Generated',
+      label: t('dashboard.contentGenerated'),
       value: contentGenerated,
       icon: FileText,
       color: 'text-green-400',
@@ -131,7 +133,7 @@ export default function Dashboard() {
       borderColor: 'border-green-500/20',
     },
     {
-      label: 'Current Plan',
+      label: t('dashboard.currentPlan'),
       value: (user?.plan ?? 'free').charAt(0).toUpperCase() + (user?.plan ?? 'free').slice(1),
       icon: Crown,
       color: 'text-purple-400',
@@ -145,6 +147,8 @@ export default function Dashboard() {
     setCurrentView(view);
   };
 
+  const welcomeMsg = `${t('dashboard.welcome').split(',')[0]}, ${user?.name?.split(' ')[0] ?? 'Creator'} 👋`;
+
   return (
     <motion.div
       variants={container}
@@ -156,10 +160,10 @@ export default function Dashboard() {
       <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Welcome back, {user?.name?.split(' ')[0] ?? 'Creator'} 👋
+            {welcomeMsg}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Here&apos;s what&apos;s happening with your content studio
+            {t('dashboard.subtitle')}
           </p>
         </div>
         <Badge
@@ -167,7 +171,7 @@ export default function Dashboard() {
           className="self-start sm:self-auto bg-yellow-500/10 text-yellow-300 border-yellow-500/30 px-3 py-1.5 text-sm font-semibold flex items-center gap-1.5"
         >
           <Coins className="w-3.5 h-3.5" />
-          {user?.credits ?? 0} Credits
+          {t('dashboard.credits').replace('{n}', String(user?.credits ?? 0))}
         </Badge>
       </motion.div>
 
@@ -219,10 +223,10 @@ export default function Dashboard() {
               </motion.div>
               <div>
                 <h3 className="font-bold text-foreground text-lg">
-                  1-Click Viral Mode
+                  {t('dashboard.oneClickViral')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Generate ideas, scripts, voice, and video automatically
+                  {t('dashboard.oneClickViralDesc')}
                 </p>
               </div>
             </div>
@@ -232,7 +236,7 @@ export default function Dashboard() {
               size="lg"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              Start Creating
+              {t('dashboard.startCreating')}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </CardContent>
@@ -242,7 +246,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <motion.div variants={item}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('dashboard.quickActions')}</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, i) => (
@@ -281,9 +285,9 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Recent Projects</CardTitle>
+                  <CardTitle className="text-base">{t('dashboard.recentProjects')}</CardTitle>
                   <CardDescription className="text-sm mt-1">
-                    Your latest content projects
+                    {t('dashboard.recentProjectsDesc')}
                   </CardDescription>
                 </div>
                 <Button
@@ -292,7 +296,7 @@ export default function Dashboard() {
                   className="text-muted-foreground hover:text-foreground"
                   onClick={() => handleNavigate('project-history')}
                 >
-                  View all
+                  {t('dashboard.viewAll')}
                   <ArrowRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               </div>
@@ -302,10 +306,10 @@ export default function Dashboard() {
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Folder className="w-10 h-10 text-muted-foreground/40 mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    No projects yet
+                    {t('dashboard.noProjects')}
                   </p>
                   <p className="text-xs text-muted-foreground/60 mt-1">
-                    Start by generating viral ideas
+                    {t('dashboard.noProjectsDesc')}
                   </p>
                   <Button
                     variant="outline"
@@ -314,7 +318,7 @@ export default function Dashboard() {
                     onClick={() => handleNavigate('idea-engine')}
                   >
                     <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                    Get Started
+                    {t('dashboard.getStarted')}
                   </Button>
                 </div>
               ) : (
@@ -336,7 +340,7 @@ export default function Dashboard() {
                             {project.title}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {project.niche ?? 'General'} · {project.creditsUsed} credits
+                            {project.niche ?? t('dashboard.general')} · {t('dashboard.credits').replace('{n}', String(project.creditsUsed))}
                           </p>
                         </div>
                       </div>
@@ -368,10 +372,10 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-purple-400" />
-                Trend Analyzer
+                {t('dashboard.trendAnalyzer')}
               </CardTitle>
               <CardDescription className="text-sm">
-                Trending niches right now
+                {t('dashboard.trendingNiches')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -442,7 +446,7 @@ export default function Dashboard() {
                 onClick={() => handleNavigate('idea-engine')}
               >
                 <Lightbulb className="w-3.5 h-3.5 mr-1.5" />
-                Explore Trending Ideas
+                {t('dashboard.exploreTrending')}
               </Button>
             </CardContent>
           </Card>

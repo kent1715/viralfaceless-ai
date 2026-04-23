@@ -32,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useI18n } from '@/lib/i18n';
 
 // ─── Waveform Bars Component ────────────────────────────────────
 function WaveformBars({ isPlaying, barCount = 32 }: { isPlaying: boolean; barCount?: number }) {
@@ -64,6 +65,7 @@ function WaveformBars({ isPlaying, barCount = 32 }: { isPlaying: boolean; barCou
 
 // ─── Audio Player Component ─────────────────────────────────────
 function AudioPlayer({ audioUrl, provider }: { audioUrl: string; provider: TTSProvider }) {
+  const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -90,7 +92,7 @@ function AudioPlayer({ audioUrl, provider }: { audioUrl: string; provider: TTSPr
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', () => {
       setIsLoading(false);
-      toast.error('Failed to load audio');
+      toast.error(t('tts.loadFailed'));
     });
 
     return () => {
@@ -99,7 +101,7 @@ function AudioPlayer({ audioUrl, provider }: { audioUrl: string; provider: TTSPr
       audio.removeEventListener('ended', handleEnded);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [audioUrl]);
+  }, [audioUrl, t]);
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
@@ -128,8 +130,8 @@ function AudioPlayer({ audioUrl, provider }: { audioUrl: string; provider: TTSPr
     link.href = audioUrl;
     link.download = `viralfaceless-tts-${provider}-${Date.now()}.mp3`;
     link.click();
-    toast.success('Audio download started!');
-  }, [audioUrl, provider]);
+    toast.success(t('tts.downloadStarted'));
+  }, [audioUrl, provider, t]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -356,6 +358,8 @@ function VoiceCard({
 
 // ─── Main Component ─────────────────────────────────────────────
 export default function TTSEngine() {
+  const { t } = useI18n();
+
   const {
     user,
     currentScript,
@@ -393,11 +397,11 @@ export default function TTSEngine() {
   // ── Generate TTS ──────────────────────────────────────────────
   const handleGenerateTTS = useCallback(async () => {
     if (!text.trim()) {
-      toast.error('Please enter text to convert to speech');
+      toast.error(t('tts.noText'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits! Purchase more to continue.');
+      toast.error(t('tts.notEnoughCredits'));
       return;
     }
 
@@ -411,7 +415,7 @@ export default function TTSEngine() {
       if (!blob.type.includes('audio') && blob.size < 200) {
         // Got an error response instead of audio
         const errData = await blob.json().catch(() => ({}));
-        throw new Error((errData as { error?: string }).error || 'Failed to generate voice');
+        throw new Error((errData as { error?: string }).error || t('tts.failed'));
       }
 
       const url = URL.createObjectURL(blob);
@@ -423,13 +427,14 @@ export default function TTSEngine() {
           setUser({ ...user, credits: parseInt(remaining, 10) });
         }
       }
-      toast.success(`${selectedProvider === 'google' ? 'Google Cloud TTS' : 'Edge TTS'} voice generated!`);
+      const providerName = selectedProvider === 'google' ? 'Google Cloud TTS' : 'Edge TTS';
+      toast.success(t('tts.generated').replace('{provider}', providerName));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to generate voice');
+      toast.error(err instanceof Error ? err.message : t('tts.failed'));
     } finally {
       setTtsLoading(false);
     }
-  }, [text, selectedVoice, speed, selectedProvider, user, setTtsAudioUrl, setTtsLoading, setUser]);
+  }, [text, selectedVoice, speed, selectedProvider, user, setTtsAudioUrl, setTtsLoading, setUser, t]);
 
   // ── Preview voice ─────────────────────────────────────────────
   const handlePreviewVoice = useCallback(async (voiceId: string) => {
@@ -445,19 +450,19 @@ export default function TTSEngine() {
 
       if (!blob.type.includes('audio') && blob.size < 200) {
         const errData = await blob.json().catch(() => ({}));
-        throw new Error((errData as { error?: string }).error || 'Failed to preview');
+        throw new Error((errData as { error?: string }).error || t('tts.previewFailed'));
       }
 
       const url = URL.createObjectURL(blob);
       setTtsAudioUrl(url);
       setActiveProvider(selectedProvider);
-      toast.success(`Playing preview`);
+      toast.success(t('tts.previewPlaying'));
     } catch {
-      toast.error('Failed to play preview');
+      toast.error(t('tts.previewFailed'));
     } finally {
       setTtsLoading(false);
     }
-  }, [selectedProvider, setTtsAudioUrl, setTtsLoading]);
+  }, [selectedProvider, setTtsAudioUrl, setTtsLoading, t]);
 
   return (
     <TooltipProvider>
@@ -466,10 +471,10 @@ export default function TTSEngine() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Mic className="size-6 text-purple-400" />
-            Text-to-Speech Engine
+            {t('tts.title')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Convert your scripts into natural-sounding voiceovers with AI-powered TTS.
+            {t('tts.subtitle')}
           </p>
         </div>
 
@@ -477,15 +482,15 @@ export default function TTSEngine() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              TTS Provider
+              {t('tts.provider')}
             </Label>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Info className="size-3.5 text-muted-foreground cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
-                <p><strong>Edge TTS</strong> — Free, Microsoft Neural voices via edge-tts</p>
-                <p className="mt-1"><strong>Google Cloud TTS</strong> — Premium Neural2 voices (requires API key)</p>
+                <p><strong>Edge TTS</strong> — {t('tts.edge.tooltip').replace('Edge TTS — ', '')}</p>
+                <p className="mt-1"><strong>Google Cloud TTS</strong> — {t('tts.google.tooltip').replace('Google Cloud TTS — ', '')}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -505,10 +510,10 @@ export default function TTSEngine() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              Script Text
+              {t('tts.scriptText')}
             </Label>
             <span className="text-xs text-muted-foreground">
-              {text.length} characters
+              {t('tts.characters').replace('{n}', String(text.length))}
             </span>
           </div>
           <Textarea
@@ -516,7 +521,7 @@ export default function TTSEngine() {
             onChange={(e) => setText(e.target.value)}
             rows={8}
             className="bg-background border-border text-sm resize-y"
-            placeholder="Paste or type your script here... The AI will convert it to speech."
+            placeholder={t('tts.scriptPlaceholder')}
           />
         </div>
 
@@ -524,7 +529,7 @@ export default function TTSEngine() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              Select Voice
+              {t('tts.selectVoice')}
             </Label>
             <Badge
               variant="outline"
@@ -534,7 +539,7 @@ export default function TTSEngine() {
                   : 'bg-purple-500/10 text-purple-400 border-purple-500/30'
               }`}
             >
-              {currentVoices.length} voices
+              {t('tts.voices').replace('{n}', String(currentVoices.length))}
             </Badge>
           </div>
           <AnimatePresence mode="wait">
@@ -565,7 +570,7 @@ export default function TTSEngine() {
           <CardContent className="py-4">
             <div className="flex items-center justify-between mb-3">
               <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Speed Control
+                {t('tts.speedControl')}
               </Label>
               <Badge variant="outline" className="font-mono">
                 {speed.toFixed(1)}x
@@ -584,8 +589,8 @@ export default function TTSEngine() {
               <span className="text-xs text-muted-foreground w-8">2.0x</span>
             </div>
             <div className="flex justify-between mt-2">
-              <span className="text-[10px] text-muted-foreground">Slow</span>
-              <span className="text-[10px] text-muted-foreground">Fast</span>
+              <span className="text-[10px] text-muted-foreground">{t('tts.slow')}</span>
+              <span className="text-[10px] text-muted-foreground">{t('tts.fast')}</span>
             </div>
           </CardContent>
         </Card>
@@ -605,9 +610,9 @@ export default function TTSEngine() {
           ) : (
             <Mic className="size-5 mr-2" />
           )}
-          Generate Voice
+          {t('tts.generate')}
           {!ttsLoading && user && (
-            <span className="ml-2 text-xs opacity-70">(-1 credit)</span>
+            <span className="ml-2 text-xs opacity-70">{t('common.credit')}</span>
           )}
         </Button>
 
@@ -625,14 +630,14 @@ export default function TTSEngine() {
                   <div className="flex items-center gap-3">
                     <Loader2 className="size-5 text-purple-400 animate-spin" />
                     <span className="text-sm font-medium text-foreground">
-                      Generating voice with {selectedProvider === 'google' ? 'Google Cloud TTS' : 'Microsoft Edge TTS'}...
+                      {t('tts.generating').replace('{provider}', selectedProvider === 'google' ? 'Google Cloud TTS' : 'Microsoft Edge TTS')}
                     </span>
                   </div>
                   <Progress value={undefined} className="h-2" />
                   <p className="text-xs text-muted-foreground">
                     {selectedProvider === 'google'
-                      ? 'Google Cloud Neural2 AI is synthesizing natural speech'
-                      : 'Microsoft Edge Neural TTS is converting your script'}
+                      ? t('tts.googleDesc')
+                      : t('tts.edgeDesc')}
                   </p>
                 </CardContent>
               </Card>

@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { THUMBNAIL_STYLES } from '@/lib/constants';
 import type { ThumbnailData } from '@/lib/types';
 
@@ -28,6 +29,7 @@ const STYLE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function ThumbnailGenerator() {
+  const { t } = useI18n();
   const {
     thumbnails,
     setThumbnails,
@@ -49,11 +51,11 @@ export default function ThumbnailGenerator() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast.error('Please describe your thumbnail concept');
+      toast.error(t('thumbnail.noConcept'));
       return;
     }
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits. Please buy more credits.');
+      toast.error(t('thumbnail.notEnoughCredits'));
       return;
     }
 
@@ -66,9 +68,9 @@ export default function ThumbnailGenerator() {
         style: data.thumbnail.style,
       };
       setThumbnails([...thumbnails, newThumbnail]);
-      toast.success('Thumbnail generated!');
+      toast.success(t('thumbnail.generated'));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to generate thumbnail';
+      const message = err instanceof Error ? err.message : t('thumbnail.failed');
       toast.error(message);
     } finally {
       setThumbnailLoading(false);
@@ -80,12 +82,12 @@ export default function ThumbnailGenerator() {
     link.href = `data:image/png;base64,${thumbnail.base64}`;
     link.download = `thumbnail-${index + 1}.png`;
     link.click();
-    toast.success('Thumbnail downloaded!');
+    toast.success(t('thumbnail.downloaded'));
   };
 
   const handleRegenerate = async (thumbnail: ThumbnailData, index: number) => {
     if (!user || user.credits < 1) {
-      toast.error('Not enough credits. Please buy more credits.');
+      toast.error(t('thumbnail.notEnoughCredits'));
       return;
     }
 
@@ -99,9 +101,9 @@ export default function ThumbnailGenerator() {
         style: data.thumbnail.style,
       };
       setThumbnails(updated);
-      toast.success('Thumbnail regenerated!');
+      toast.success(t('thumbnail.regenerated'));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to regenerate';
+      const message = err instanceof Error ? err.message : t('thumbnail.regenerateFailed');
       toast.error(message);
     } finally {
       setThumbnailLoading(false);
@@ -120,9 +122,9 @@ export default function ThumbnailGenerator() {
           <ImageIcon className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Thumbnail Generator</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('thumbnail.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Create eye-catching thumbnails for your viral content
+            {t('thumbnail.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -136,7 +138,7 @@ export default function ThumbnailGenerator() {
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your thumbnail concept... e.g. 'Dark mysterious background with glowing text saying YOU WON'T BELIEVE THIS'"
+          placeholder={t('thumbnail.placeholder')}
           className="min-h-[120px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground/50 focus:ring-purple-500/50"
         />
       </motion.div>
@@ -147,7 +149,7 @@ export default function ThumbnailGenerator() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Choose Style</h3>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t('thumbnail.chooseStyle')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {THUMBNAIL_STYLES.map((style) => (
             <Card
@@ -193,14 +195,14 @@ export default function ThumbnailGenerator() {
           {thumbnailLoading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Generating thumbnail...
+              {t('thumbnail.generating')}
             </>
           ) : (
             <>
               <ImageIcon className="mr-2 h-5 w-5" />
-              Generate Thumbnail
+              {t('thumbnail.generate')}
               <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
-                -1 credit
+                {t('common.credit')}
               </span>
             </>
           )}
@@ -218,7 +220,7 @@ export default function ThumbnailGenerator() {
           >
             <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-foreground">
               <Star className="h-5 w-5 text-yellow-500" />
-              Generated Thumbnails
+              {t('thumbnail.gallery')}
               <span className="text-sm font-normal text-muted-foreground">
                 ({thumbnails.length})
               </span>
@@ -256,18 +258,18 @@ export default function ThumbnailGenerator() {
                           className="flex-1 h-8 text-xs border-border hover:bg-purple-500/10 hover:text-purple-400 hover:border-purple-500/50"
                         >
                           <Download className="mr-1 h-3 w-3" />
-                          Download
+                          {t('thumbnail.download')}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            toast.success('Thumbnail set as post thumbnail!');
+                            toast.success(t('thumbnail.setAsPostSuccess'));
                           }}
                           className="flex-1 h-8 text-xs border-border hover:bg-green-500/10 hover:text-green-400 hover:border-green-500/50"
                         >
                           <Star className="mr-1 h-3 w-3" />
-                          Set as Post
+                          {t('thumbnail.setAsPost')}
                         </Button>
                         <Button
                           variant="outline"
@@ -299,10 +301,9 @@ export default function ThumbnailGenerator() {
           <div className="rounded-2xl bg-muted/50 p-6 mb-4">
             <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
           </div>
-          <h3 className="text-lg font-medium text-foreground">No thumbnails yet</h3>
+          <h3 className="text-lg font-medium text-foreground">{t('thumbnail.noThumbnails')}</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-sm">
-            Describe your thumbnail concept above and click generate to create stunning
-            AI-powered thumbnails.
+            {t('thumbnail.noThumbnailsDesc')}
           </p>
         </motion.div>
       )}
