@@ -91,12 +91,12 @@ export const api = {
       }, 120000).then((r) => r.json()),
   },
 
-  // ─── TTS (no auth needed, moderate timeout) ─────────
+  // ─── TTS (supports edge + google provider) ──
   tts: {
-    generate: (text: string, voice?: string, speed?: number) =>
+    generate: (text: string, voice?: string, speed?: number, provider?: string) =>
       authFetch('/api/tts/generate', {
         method: 'POST',
-        body: JSON.stringify({ text, voice, speed }),
+        body: JSON.stringify({ text, voice, speed, provider }),
       }, 60000),
   },
 

@@ -148,6 +148,13 @@ export type NicheType =
 export type ScriptStyle = 'storytelling' | 'controversial' | 'educational' | 'emotional';
 export type ScriptTone = 'serious' | 'funny' | 'dark' | 'energetic';
 
-export type TTSVoice = 'gadis' | 'ardi' | 'jenny' | 'guy' | 'aria' | 'davis' | 'sonia' | 'ryan';
+export type TTSProvider = 'edge' | 'google';
+export type TTSVoice =
+  // Edge TTS voices
+  | 'gadis' | 'ardi' | 'jenny' | 'guy' | 'aria' | 'davis' | 'sonia' | 'ryan'
+  // Google Cloud TTS voices
+  | 'gcp-ind-f1' | 'gcp-ind-f2' | 'gcp-ind-m1' | 'gcp-ind-m2'
+  | 'gcp-us-f1' | 'gcp-us-f2' | 'gcp-us-f3' | 'gcp-us-m1' | 'gcp-us-m2'
+  | 'gcp-gb-f1' | 'gcp-gb-f2' | 'gcp-gb-m1' | 'gcp-gb-m2';
 export type ThumbnailStyle = 'clickbait' | 'clean' | 'minimal';
 export type PaymentMethod = 'qris' | 'bank_transfer' | 'ewallet';

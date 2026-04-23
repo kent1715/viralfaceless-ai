@@ -27,15 +27,48 @@ export const SCRIPT_TONES = [
   { value: 'energetic', label: 'Energetic', description: 'High-energy and hype' },
 ] as const;
 
+// ─── TTS Providers ─────────────────────────────────────────────────
+export const TTS_PROVIDERS = [
+  { value: 'edge' as const, label: 'Microsoft Edge TTS', description: 'Free • Neural voices', badge: 'Free' },
+  { value: 'google' as const, label: 'Google Cloud TTS', description: 'Premium • Neural2 voices', badge: 'Premium' },
+] as const;
+
+// ─── Edge TTS Voices ──────────────────────────────────────────────
+export const EDGE_TTS_VOICES = [
+  { value: 'gadis' as const, label: 'Gadis', description: '🇮🇩 Wanita Indonesia - Hangat' },
+  { value: 'ardi' as const, label: 'Ardi', description: '🇮🇩 Pria Indonesia - Tegas' },
+  { value: 'jenny' as const, label: 'Jenny', description: '🇺🇸 US Female - Friendly' },
+  { value: 'guy' as const, label: 'Guy', description: '🇺🇸 US Male - Confident' },
+  { value: 'aria' as const, label: 'Aria', description: '🇺🇸 US Female - Energetic' },
+  { value: 'davis' as const, label: 'Davis', description: '🇺🇸 US Male - Professional' },
+  { value: 'sonia' as const, label: 'Sonia', description: '🇬🇧 UK Female - Elegant' },
+  { value: 'ryan' as const, label: 'Ryan', description: '🇬🇧 UK Male - British' },
+] as const;
+
+// ─── Google Cloud TTS Voices (Neural2) ───────────────────────────
+export const GOOGLE_TTS_VOICES = [
+  // Indonesian
+  { value: 'gcp-ind-f1' as const, label: 'Siti', description: '🇮🇩 Indonesia - Perempuan Neural2' },
+  { value: 'gcp-ind-f2' as const, label: 'Rina', description: '🇮🇩 Indonesia - Perempuan Neural2' },
+  { value: 'gcp-ind-m1' as const, label: 'Budi', description: '🇮🇩 Indonesia - Laki-laki Neural2' },
+  { value: 'gcp-ind-m2' as const, label: 'Andi', description: '🇮🇩 Indonesia - Laki-laki Neural2' },
+  // US English
+  { value: 'gcp-us-f1' as const, label: 'Amanda', description: '🇺🇸 US Female - Neural2' },
+  { value: 'gcp-us-f2' as const, label: 'Sarah', description: '🇺🇸 US Female - Neural2' },
+  { value: 'gcp-us-f3' as const, label: 'Olivia', description: '🇺🇸 US Female - Neural2' },
+  { value: 'gcp-us-m1' as const, label: 'James', description: '🇺🇸 US Male - Neural2' },
+  { value: 'gcp-us-m2' as const, label: 'Leo', description: '🇺🇸 US Male - Journey' },
+  // British English
+  { value: 'gcp-gb-f1' as const, label: 'Emma', description: '🇬🇧 UK Female - Neural2' },
+  { value: 'gcp-gb-f2' as const, label: 'Lily', description: '🇬🇧 UK Female - Neural2' },
+  { value: 'gcp-gb-m1' as const, label: 'Harry', description: '🇬🇧 UK Male - Neural2' },
+  { value: 'gcp-gb-m2' as const, label: 'Oliver', description: '🇬🇧 UK Male - Neural2' },
+] as const;
+
+// ─── All TTS Voices (legacy, for backward compat) ─────────────────
 export const TTS_VOICES = [
-  { value: 'gadis', label: 'Gadis', description: '🇮🇩 Wanita Indonesia - Hangat' },
-  { value: 'ardi', label: 'Ardi', description: '🇮🇩 Pria Indonesia - Tegas' },
-  { value: 'jenny', label: 'Jenny', description: '🇺🇸 US Female - Friendly' },
-  { value: 'guy', label: 'Guy', description: '🇺🇸 US Male - Confident' },
-  { value: 'aria', label: 'Aria', description: '🇺🇸 US Female - Energetic' },
-  { value: 'davis', label: 'Davis', description: '🇺🇸 US Male - Professional' },
-  { value: 'sonia', label: 'Sonia', description: '🇬🇧 UK Female - Elegant' },
-  { value: 'ryan', label: 'Ryan', description: '🇬🇧 UK Male - British' },
+  ...EDGE_TTS_VOICES,
+  ...GOOGLE_TTS_VOICES,
 ] as const;
 
 export const THUMBNAIL_STYLES = [

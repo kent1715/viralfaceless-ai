@@ -9,8 +9,8 @@ import { db } from '@/lib/db';
 
 const execFileAsync = promisify(execFile);
 
-// Edge-TTS voice mapping
-const VOICE_MAP: Record<string, { voice: string; lang: string }> = {
+// ─── Edge-TTS Voice Mapping ───────────────────────────────────────
+const EDGE_VOICE_MAP: Record<string, { voice: string; lang: string }> = {
   gadis: { voice: 'id-ID-GadisNeural', lang: '🇮🇩' },
   ardi: { voice: 'id-ID-ArdiNeural', lang: '🇮🇩' },
   jenny: { voice: 'en-US-JennyNeural', lang: '🇺🇸' },
@@ -21,15 +21,107 @@ const VOICE_MAP: Record<string, { voice: string; lang: string }> = {
   ryan: { voice: 'en-GB-RyanNeural', lang: '🇬🇧' },
 };
 
-const DEFAULT_VOICE = 'id-ID-GadisNeural';
+// ─── Google Cloud TTS Voice Mapping ───────────────────────────────
+const GOOGLE_VOICE_MAP: Record<string, { voice: string; lang: string; gender: string }> = {
+  // Indonesian (Neural2)
+  'gcp-ind-f1': { voice: 'id-ID-Neural2-A', lang: '🇮🇩', gender: 'Female' },
+  'gcp-ind-f2': { voice: 'id-ID-Neural2-C', lang: '🇮🇩', gender: 'Female' },
+  'gcp-ind-m1': { voice: 'id-ID-Neural2-B', lang: '🇮🇩', gender: 'Male' },
+  'gcp-ind-m2': { voice: 'id-ID-Neural2-D', lang: '🇮🇩', gender: 'Male' },
+  // US English (Neural2 / Journey)
+  'gcp-us-f1': { voice: 'en-US-Neural2-A', lang: '🇺🇸', gender: 'Female' },
+  'gcp-us-f2': { voice: 'en-US-Neural2-C', lang: '🇺🇸', gender: 'Female' },
+  'gcp-us-f3': { voice: 'en-US-Neural2-F', lang: '🇺🇸', gender: 'Female' },
+  'gcp-us-m1': { voice: 'en-US-Neural2-D', lang: '🇺🇸', gender: 'Male' },
+  'gcp-us-m2': { voice: 'en-US-Journey-D', lang: '🇺🇸', gender: 'Male' },
+  // British English (Neural2)
+  'gcp-gb-f1': { voice: 'en-GB-Neural2-A', lang: '🇬🇧', gender: 'Female' },
+  'gcp-gb-f2': { voice: 'en-GB-Neural2-C', lang: '🇬🇧', gender: 'Female' },
+  'gcp-gb-m1': { voice: 'en-GB-Neural2-B', lang: '🇬🇧', gender: 'Male' },
+  'gcp-gb-m2': { voice: 'en-GB-Neural2-D', lang: '🇬🇧', gender: 'Male' },
+};
 
+const DEFAULT_EDGE_VOICE = 'id-ID-GadisNeural';
+const GCP_TTS_API_KEY = process.env.GCP_TTS_API_KEY || '';
+
+// ─── Edge-TTS Engine ──────────────────────────────────────────────
+async function generateEdgeTTS(
+  text: string,
+  voiceName: string,
+  speed: number
+): Promise<Buffer> {
+  const tmpDir = await mkdtemp(join(tmpdir(), 'tts-'));
+  const outputFile = join(tmpDir, 'output.mp3');
+
+  try {
+    const rateStr = `+${Math.round((speed - 1) * 100)}%`;
+    await execFileAsync('edge-tts', [
+      '--voice', voiceName,
+      '--rate', rateStr,
+      '--text', text.trim(),
+      '--write-media', outputFile,
+    ], { timeout: 60000 });
+
+    const { readFile } = await import('fs/promises');
+    return await readFile(outputFile);
+  } finally {
+    try {
+      await unlink(outputFile);
+      const { rmdir } = await import('fs/promises');
+      await rmdir(tmpDir);
+    } catch { /* ignore cleanup */ }
+  }
+}
+
+// ─── Google Cloud TTS Engine (REST API) ───────────────────────────
+async function generateGoogleTTS(
+  text: string,
+  voiceName: string,
+  speed: number
+): Promise<Buffer> {
+  if (!GCP_TTS_API_KEY) {
+    throw new Error('GCP_TTS_API_KEY is not configured.');
+  }
+
+  const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GCP_TTS_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input: { text: text.trim() },
+      voice: {
+        languageCode: voiceName.split('-').slice(0, 2).join('-'),
+        name: voiceName,
+      },
+      audioConfig: {
+        audioEncoding: 'MP3',
+        speakingRate: speed,
+        pitch: 0,
+        volumeGainDb: 0,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(
+      (err as { error?: { message?: string } })?.error?.message || `Google TTS API error: ${response.status}`
+    );
+  }
+
+  const data = await response.json() as { audioContent: string };
+  return Buffer.from(data.audioContent, 'base64');
+}
+
+// ─── POST Handler ─────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const auth = await authenticateRequest(request);
     if (!auth.success) return auth.response;
 
     const body = await request.json();
-    const { text, voice = 'gadis', speed = 1.0 } = body;
+    const { text, voice = 'gadis', speed = 1.0, provider = 'edge' } = body;
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json(
@@ -38,56 +130,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Map voice name to edge-tts voice
-    const voiceConfig = VOICE_MAP[voice] || VOICE_MAP.gadis;
-    const voiceName = voiceConfig.voice;
-
-    // Clamp speed
     const clampedSpeed = Math.min(2.0, Math.max(0.5, Number(speed) || 1.0));
-    // Edge-TTS uses percentage: +0% = normal, +50% = 1.5x, -50% = 0.5x
-    const rateStr = `+${Math.round((clampedSpeed - 1) * 100)}%`;
 
-    // Create temp directory and output file
-    const tmpDir = await mkdtemp(join(tmpdir(), 'tts-'));
-    const outputFile = join(tmpDir, 'output.mp3');
+    let audioBuffer: Buffer;
+    let usedProvider: string;
+    let displayVoice: string;
 
-    try {
-      // Call Python edge-tts CLI
-      await execFileAsync('edge-tts', [
-        '--voice', voiceName,
-        '--rate', rateStr,
-        '--text', text.trim(),
-        '--write-media', outputFile,
-      ], {
-        timeout: 60000, // 60 second timeout for TTS generation
-      });
-
-      // Read the generated MP3 file
-      const { readFile } = await import('fs/promises');
-      const audioBuffer = await readFile(outputFile);
-
-      // Return audio as binary response
-      return new NextResponse(new Uint8Array(audioBuffer), {
-        status: 200,
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': audioBuffer.length.toString(),
-          'Cache-Control': 'no-cache',
-          'X-Voice-Used': voice,
-          'X-Voice-Display': voiceName,
-        },
-      });
-    } finally {
-      // Cleanup temp files
-      try {
-        const { unlink } = await import('fs/promises');
-        await unlink(outputFile);
-        const { rmdir } = await import('fs/promises');
-        await rmdir(tmpDir);
-      } catch {
-        // Ignore cleanup errors
+    if (provider === 'google') {
+      // ── Google Cloud TTS ──
+      const voiceConfig = GOOGLE_VOICE_MAP[voice];
+      if (!voiceConfig) {
+        return NextResponse.json(
+          { error: `Unknown Google voice: ${voice}` },
+          { status: 400 }
+        );
       }
+
+      audioBuffer = await generateGoogleTTS(text, voiceConfig.voice, clampedSpeed);
+      usedProvider = 'google';
+      displayVoice = voiceConfig.voice;
+    } else {
+      // ── Edge TTS (default) ──
+      const voiceConfig = EDGE_VOICE_MAP[voice] || EDGE_VOICE_MAP.gadis;
+      audioBuffer = await generateEdgeTTS(text, voiceConfig.voice, clampedSpeed);
+      usedProvider = 'edge';
+      displayVoice = voiceConfig.voice;
     }
+
+    // Return audio as binary response
+    return new NextResponse(new Uint8Array(audioBuffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.length.toString(),
+        'Cache-Control': 'no-cache',
+        'X-Voice-Used': voice,
+        'X-Voice-Display': displayVoice,
+        'X-TTS-Provider': usedProvider,
+      },
+    });
   } catch (error: unknown) {
     console.error('TTS generation error:', error);
     const errMsg = error instanceof Error ? error.message : String(error);
@@ -98,6 +179,18 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
+    if (errMsg.includes('GCP_TTS_API_KEY')) {
+      return NextResponse.json(
+        { error: 'Google Cloud TTS is not configured. Set GCP_TTS_API_KEY environment variable.' },
+        { status: 503 }
+      );
+    }
+    if (errMsg.includes('API key not valid') || errMsg.includes('PERMISSION_DENIED')) {
+      return NextResponse.json(
+        { error: 'Google Cloud TTS API key is invalid or lacks permissions.' },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json(
       { error: 'Failed to generate speech. Please try again.' },
@@ -106,27 +199,43 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
+// ─── GET Handler (Health Check) ───────────────────────────────────
 export async function GET() {
   try {
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const execFileAsync = promisify(execFile);
+    const edgeVoices: { id: string; voice: string; lang: string; provider: string }[] = [];
+    const googleVoices: { id: string; voice: string; lang: string; provider: string }[] = [];
 
-    await execFileAsync('edge-tts', ['--list-voices'], { timeout: 10000 });
+    // Check Edge TTS
+    let edgeHealthy = false;
+    try {
+      await execFileAsync('edge-tts', ['--list-voices'], { timeout: 10000 });
+      edgeHealthy = true;
+      for (const [key, val] of Object.entries(EDGE_VOICE_MAP)) {
+        edgeVoices.push({ id: key, voice: val.voice, lang: val.lang, provider: 'edge' });
+      }
+    } catch { /* edge-tts not available */ }
+
+    // Check Google TTS
+    let googleHealthy = !!GCP_TTS_API_KEY;
+    if (GCP_TTS_API_KEY) {
+      for (const [key, val] of Object.entries(GOOGLE_VOICE_MAP)) {
+        googleVoices.push({ id: key, voice: val.voice, lang: val.lang, provider: 'google' });
+      }
+    }
+
+    const healthy = edgeHealthy || googleHealthy;
 
     return NextResponse.json({
-      status: 'healthy',
-      engine: 'edge-tts (Microsoft Edge Neural TTS)',
-      voices: Object.entries(VOICE_MAP).map(([key, val]) => ({
-        id: key,
-        voice: val.voice,
-        lang: val.lang,
-      })),
+      status: healthy ? 'healthy' : 'unhealthy',
+      engines: {
+        edge: { status: edgeHealthy ? 'available' : 'unavailable', voices: edgeVoices.length },
+        google: { status: googleHealthy ? 'available' : 'not_configured', voices: googleVoices.length },
+      },
+      voices: [...edgeVoices, ...googleVoices],
     });
   } catch {
     return NextResponse.json(
-      { status: 'unhealthy', error: 'edge-tts not available' },
+      { status: 'unhealthy', error: 'TTS check failed' },
       { status: 503 }
     );
   }

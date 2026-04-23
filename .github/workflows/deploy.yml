@@ -26,6 +26,7 @@ jobs:
               -p 3000:3000 \
               -e DATABASE_URL=file:/app/data/prod.db \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -e GCP_TTS_API_KEY=${{ secrets.GCP_TTS_API_KEY }} \
               -v /home/ubuntu/viralfaceless-data:/app/data \
               viralfaceless-ai
 
