@@ -1,0 +1,95 @@
+// ============================================
+// ViralFaceless AI — LOCKED SCHEMA V11
+// No wild fields. Only contracted fields.
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  credits   Int      @default(10)
+  plan      String   @default("free") // free | pro | enterprise
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ideas     ViralIdea[]
+  scripts   Script[]
+  analytics ViralAnalytics[]
+}
+
+// ============================================
+// LOCKED: ViralIdea Schema Contract
+// Fields: title, hook, emotionalTrigger[],
+//         viralityScore, curiosityScore, reason
+// NO wild fields allowed (no openLoop, curiosityGap, score)
+// ============================================
+model ViralIdea {
+  id               String   @id @default(cuid())
+  userId           String
+  niche            String
+  title            String
+  hook             String
+  emotionalTrigger Json     // string[] — LOCKED as Json type
+  viralityScore    Int      @default(0)   // 0-100
+  curiosityScore   Int      @default(0)   // 0-100
+  reason           String
+  language         String   @default("en")
+  createdAt        DateTime @default(now())
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analytics ViralAnalytics[]
+  scripts   Script[]
+
+  @@index([userId])
+  @@index([niche])
+}
+
+model Script {
+  id        String   @id @default(cuid())
+  ideaId    String
+  userId    String
+  content   Json     // { scenes, timeline, voiceover, visualNotes }
+  language  String   @default("en")
+  createdAt DateTime @default(now())
+
+  idea ViralIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId])
+  @@index([userId])
+}
+
+// ============================================
+// V11 Analytics Layer — Self-Learning Loop
+// ============================================
+model ViralAnalytics {
+  id          String   @id @default(cuid())
+  ideaId      String
+  userId      String
+  platform    String   // tiktok | youtube | instagram | twitter
+  ctr         Float    @default(0)   // click-through rate
+  retention   Float    @default(0)   // avg watch retention %
+  watchTime   Float    @default(0)   // avg seconds watched
+  likes       Int      @default(0)
+  shares      Int      @default(0)
+  comments    Int      @default(0)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  idea  ViralIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId])
+  @@index([platform])
+  @@index([createdAt])
+}
