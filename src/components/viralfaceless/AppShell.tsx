@@ -122,7 +122,7 @@ export function AppShell() {
             </Button>
 
             {/* User */}
-            <Avatar size="sm">
+            <Avatar className="size-8">
               <AvatarFallback className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 {(user.name || user.email).charAt(0).toUpperCase()}
               </AvatarFallback>

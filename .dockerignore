@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+*.md
+dev.log
+server.log
+data/
+*.db
+*.db-journal

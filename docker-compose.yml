@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - app-data:/app/data
+    environment:
+      - DATABASE_URL=file:/app/data/prod.db
+      - JWT_SECRET=${JWT_SECRET:-vf-prod-secret-change-me}
+      - AI_API_KEY=${AI_API_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  app-data:
